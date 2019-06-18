@@ -81,9 +81,9 @@ def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     
 def main():
     
-    num_iters = 1
+    num_iters = 20
     #int(input("Number of iterations: "))
-    print_every = 1
+    print_every = 4
     #int(input("Checkpoint amount of iterations: "))
     iter_correct_a = 0
     iter_correct_e = 0
@@ -174,8 +174,8 @@ def main():
             times_obs_Syn[i] = f_orb_Syn*P_Syn*i/(num_obs_Syn-1)
     
         ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
-        ra_errs_Syn = 0.05*ra_theo_Syn
-        dec_errs_Syn = 0.05*dec_theo_Syn
+        ra_errs_Syn = 0.025*ra_theo_Syn
+        dec_errs_Syn = 0.025*dec_theo_Syn
     
         #Eq. 11 L14
         ra_obs_Syn = ra_theo_Syn + np.random.normal(0, abs(ra_errs_Syn))
@@ -280,7 +280,8 @@ def main():
                                                                                             B_array, F_array, \
                                                                                             G_array, sigma_list,\
                                                                                             chi_squared, N)
-    
+        
+        
         # Get the credible interval for the semimajor axis: 
         a_mean, a_low, a_high = orbits.credible_interval(a_N, new_likelihood)
         
@@ -430,7 +431,7 @@ def main():
     T_name = "time of periastron passage"
     print_min_max_avg(T_lowers, T_uppers, num_iters, T_name, T_unit)
     
-    e_name = "period"
+    e_name = "eccentricity"
     print_min_max_avg(e_lowers, e_uppers, num_iters, e_name)
     
     a_unit = "AU"
