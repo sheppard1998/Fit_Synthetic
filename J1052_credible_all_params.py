@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jun 14 10:45:16 2019
+Created on Tue Jun 18 14:50:28 2019
 Tests the credibility interval from orbits.py against true values to try and
 get a coverage fraction similar to the percentage described by the interval. 
 Prints these success rates and the statistics of the intervals over a certain 
@@ -78,7 +78,7 @@ def main():
     iter_correct_e = 0
     iter_correct_i = 0
     iter_correct_P = 0
-    iter_correct_T = 0
+    #iter_correct_T = 0
     iter_correct_Omega = 0
     iter_correct_w = 0
     iters_comp = 0
@@ -120,9 +120,9 @@ def main():
             cov_frac_P = iter_correct_P/iters_comp
             print("Coverage fraction for period (P) stands at %0.3f over %d runs" %(cov_frac_P, iters_comp))
             print()
-            cov_frac_T = iter_correct_T/iters_comp
-            print("Coverage fraction for time of periastron passage (T) stands at %0.3f over %d runs" %(cov_frac_T, iters_comp))
-            print()
+            #cov_frac_T = iter_correct_T/iters_comp
+            #print("Coverage fraction for time of periastron passage (T) stands at %0.3f over %d runs" %(cov_frac_T, iters_comp))
+            #print()
             cov_frac_e = iter_correct_e/iters_comp
             print("Coverage fraction for eccentricity (e) stands at %0.3f over %d runs" %(cov_frac_e, iters_comp))
             print()
@@ -142,46 +142,32 @@ def main():
             print("The average runtime of one iteration stands at %0.3f seconds after %d runs" %(avg_runtime, iters_comp))
             print("--------------------------------------------------")
             print()
-            
-            
-        #Eq.8 L14
-        P_Syn = 100
-        tau_Syn = 0.4
-        e_Syn = 0.5
-        a_Syn = 1
-        i_Syn = np.radians(60)
-        w_Syn = np.radians(250)
-        Omega_Syn = np.radians(120)
-        T_Syn = tau_Syn * P_Syn 
-        A_Syn, B_Syn, F_Syn, G_Syn = orbits.Thiele_Innes_from_Campbell(w_Syn, a_Syn, i_Syn, Omega_Syn)
         
-        f_orb_Syn = 0.4
-        num_obs_Syn = 15
-        times_obs_Syn = np.zeros(15)
-        for i in range(num_obs_Syn):
-            #Eq. 10 L14
-            times_obs_Syn[i] = f_orb_Syn*P_Syn*i/(num_obs_Syn-1)
-    
-        ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
-        ra_errs_Syn = 0.025*ra_theo_Syn
-        dec_errs_Syn = 0.025*dec_theo_Syn
-    
-        #Eq. 11 L14
-        ra_obs_Syn = ra_theo_Syn + np.random.normal(0, abs(ra_errs_Syn))
-        dec_obs_Syn = dec_theo_Syn + np.random.normal(0, abs(dec_errs_Syn))
-    
         overall_start_time = Time.time()
         
+        # Distance to the system in pc:
+        d_pc = 26.1  # cf. Dupuy et al.  
         # Name of the system we're fitting: 
-        star_name = "Synthetic"
-    
-    
+        star_name = "SDSS J105213.51+442255.7"
+        
+        # Read in orbital data, which we have saved in a file. 
+        # Positions are in milliarcsecond units.  Different conversions
+        # might be needed if your data are in different units.
+        datafile = "SDSS_J1052.txt"
+        t = Table.read(datafile, format='ascii.commented_header')
+        
+        # Convert the position angle and separation to RA and Dec separation: 
+        ra_obs, dec_obs, ra_errs, dec_errs = orbits.rho_PA_to_RA_Dec( t['rho'],t['PA'], \
+                                                                      t['rho_err'], t['PA_err'])
+        
         # Careful with our x-y coordinate system - not the same as RA-Dec!
-        x_obs = dec_obs_Syn
-        y_obs = ra_obs_Syn
-        x_errs = dec_errs_Syn
-        y_errs = ra_errs_Syn
-        times_obs = times_obs_Syn
+        x_obs = dec_obs + np.random.normal(0, abs(dec_errs))
+        y_obs = ra_obs + np.random.normal(0, abs(ra_errs))
+        x_errs = dec_errs
+        y_errs = ra_errs
+        
+        # Code below assumes dates in years.  Convert if necessary. 
+        times_obs = t['Date']
         
         # Now that we have the data, find the best fit
         # orbit by searching over a range of parameters:
@@ -204,8 +190,8 @@ def main():
     
         e_max = 0.99
     
-        logP_min = np.log10(70)
-        logP_max = np.log10(130)
+        logP_min = np.log10(5)
+        logP_max = np.log10(10)
         P_array, e_array, T_array = orbits.grid_P_e_T(n, logP_min, logP_max, T_start=data_start, e_max=e_max)
     
     
@@ -255,7 +241,7 @@ def main():
         # Resample the above grid by an extra factor of N, following 
         # method in Lucy 2014B:
     
-        N = 20
+        N = 50
     
         w_N, a_N, i_N, T_N, e_N, P_N, Omega_N, new_likelihood, script_ABFG = orbits.correct_orbit_likelihood(\
                                                                                             P_array, e_array, \
@@ -282,39 +268,19 @@ def main():
         
         # Get the credible interval for the position angle of ascending node: 
         Omega_mean, Omega_low, Omega_high = orbits.credible_interval(Omega_N, new_likelihood)
-        
-        #Taking care of Omega offset that occurs in conversion to campbell elements
-        if (Omega_Syn < 0):
-            Omega_mean -= np.pi
-            Omega_low -= np.pi
-            Omega_high -= np.pi
-        elif(Omega_Syn > np.pi):
-            Omega_mean += np.pi
-            Omega_low += np.pi
-            Omega_high += np.pi
-            
+
         # Get the credible interval for the longitude of periastron: 
         w_mean, w_low, w_high = orbits.credible_interval(w_N, new_likelihood)
-        
-        #Taking care of w offset that occurs in conversion to campbell elements
-        if (Omega_Syn < 0):
-            w_mean -= np.pi
-            w_low -= np.pi
-            w_high -= np.pi
-        elif(Omega_Syn > np.pi):
-            w_mean += np.pi
-            w_low += np.pi
-            w_high += np.pi
-        
+  
         # Measured values:
-        #c.f. Fantino & Casotto pg. 11
-        lit_a = a_Syn
-        lit_i = np.rad2deg(i_Syn)
-        lit_T = T_Syn
-        lit_e = e_Syn
-        lit_P = P_Syn
-        lit_Omega = np.rad2deg(Omega_Syn)
-        lit_w = np.rad2deg(w_Syn)
+        #c.f. Dupuy et al.
+        lit_a = 70.59
+        lit_i = 62
+        #No lit_T as Dupuy et al. doesn't specify one to test against 
+        lit_e = 0.1387
+        lit_P = 8.614
+        lit_Omega = 126.7
+        lit_w = 186.5
         
         #Returning to degrees
         w_mean = np.rad2deg(w_mean)
@@ -334,8 +300,8 @@ def main():
             iter_correct_a += 1    
         if (lit_i > i_low and lit_i < i_high):
             iter_correct_i += 1    
-        if (lit_T > T_low and lit_T < T_high):
-            iter_correct_T += 1    
+        #if (lit_T > T_low and lit_T < T_high):
+            #iter_correct_T += 1    
         if (lit_e > e_low and lit_e < e_high):
             iter_correct_e += 1    
         if (lit_P > P_low and lit_P < P_high):
@@ -367,9 +333,9 @@ def main():
     cov_frac_P = iter_correct_P/num_iters
     print("Coverage fraction for period (P) stands at %0.3f over %d runs" %(cov_frac_P, num_iters))
     print()
-    cov_frac_T = iter_correct_T/num_iters
-    print("Coverage fraction for time of periastron passage (T) stands at %0.3f over %d runs" %(cov_frac_T, num_iters))
-    print()
+    #cov_frac_T = iter_correct_T/num_iters
+    #print("Coverage fraction for time of periastron passage (T) stands at %0.3f over %d runs" %(cov_frac_T, num_iters))
+    #print()
     cov_frac_e = iter_correct_e/num_iters
     print("Coverage fraction for eccentricity (e) stands at %0.3f over %d runs" %(cov_frac_e, num_iters))
     print()
@@ -398,13 +364,13 @@ def main():
     w_range = np.vstack((w_lowers, w_uppers)).T
     Omega_range = np.vstack((Omega_lowers, Omega_uppers)).T
     
-    np.savetxt("P_Intervals_Synthetic.txt", P_range, fmt="%s")
-    np.savetxt("T_Intervals_Synthetic.txt", T_range, fmt="%s")
-    np.savetxt("e_Intervals_Synthetic.txt", e_range, fmt="%s")
-    np.savetxt("a_Intervals_Synthetic.txt", a_range, fmt="%s")
-    np.savetxt("i_Intervals_Synthetic.txt", i_range, fmt="%s")
-    np.savetxt("w_Intervals_Synthetic.txt", w_range, fmt="%s")
-    np.savetxt("Omega_Intervals_Synthetic.txt", Omega_range, fmt="%s")
+    np.savetxt("P_Intervals_J1052.txt", P_range, fmt="%s")
+    np.savetxt("T_Intervals_J1052.txt", T_range, fmt="%s")
+    np.savetxt("e_Intervals_J1052.txt", e_range, fmt="%s")
+    np.savetxt("a_Intervals_J1052.txt", a_range, fmt="%s")
+    np.savetxt("i_Intervals_J1052.txt", i_range, fmt="%s")
+    np.savetxt("w_Intervals_J1052.txt", w_range, fmt="%s")
+    np.savetxt("Omega_Intervals_J1052.txt", Omega_range, fmt="%s")
     
     P_unit = "years"
     P_name = "period"
