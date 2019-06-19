@@ -72,8 +72,10 @@ def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     
 def main():
     
-    num_iters = int(input("Number of iterations: "))
-    print_every = int(input("Checkpoint amount of iterations: "))
+    num_iters = 1
+    #int(input("Number of iterations: "))
+    print_every = 1
+    #int(input("Checkpoint amount of iterations: "))
     iter_correct_a = 0
     iter_correct_e = 0
     iter_correct_i = 0
@@ -108,7 +110,7 @@ def main():
             print()
             print("Eccentricity (e): %0.3f to %0.3f" %(e_low, e_high))
             print()
-            print("Semi major axis (a): %0.3f to %0.3f AU" %(a_low, a_high))
+            print("Semi major axis (a): %0.3f to %0.3f arcsec" %(a_low, a_high))
             print()
             print("Inclination (i): %0.3f to %0.3f degrees" %(i_low, i_high))
             print()
@@ -417,7 +419,7 @@ def main():
     e_name = "eccentricity"
     print_min_max_avg(e_lowers, e_uppers, num_iters, e_name)
     
-    a_unit = "AU"
+    a_unit = "arcsec"
     a_name = "semi-major axis"
     print_min_max_avg(a_lowers, a_uppers, num_iters, a_name, a_unit)
     
