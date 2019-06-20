@@ -15,20 +15,12 @@ from __future__ import print_function, division
 
 # Import the key packages we need:
 import numpy as np
-import matplotlib.pyplot as plt
-# Make default font a bit bigger:
-import matplotlib
-matplotlib.rcParams['font.size'] = 18   # Font size in points
 
 from astropy.table import Table
+
 import time as Time
 
 import orbits
-
-import random
-
-# Plots show in the notebook, not pop-up:
-#%matplotlib inline
 
 def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     '''
@@ -145,11 +137,6 @@ def main():
         
         overall_start_time = Time.time()
         
-        # Distance to the system in pc:
-        d_pc = 26.1  # cf. Dupuy et al.  
-        # Name of the system we're fitting: 
-        star_name = "SDSS J105213.51+442255.7"
-        
         # Read in orbital data, which we have saved in a file. 
         # Positions are in milliarcsecond units.  Different conversions
         # might be needed if your data are in different units.
@@ -227,16 +214,6 @@ def main():
         # Then take these and get the other orbital parameters, too: 
         w_array, a_array, i_array, Omega_array = orbits.Campbell_from_Thiele_Innes(A_array, B_array, F_array, G_array)
     
-        # Not using a mass prior so just set to 1:
-        mass_prior = 1
-    
-        # Calculate reduced chi-squared: 
-        reduced_chi_squared = chi_squared/(times_obs.size - 3)
-    
-        # Likelihood of a given model is exp(-chi_squared/2); calculate while
-        # also taking the prior into account:
-        likelihood = np.exp(-0.5*reduced_chi_squared) * mass_prior
-        
         # Now get a more refined version of the mass posterior: 
         # Resample the above grid by an extra factor of N, following 
         # method in Lucy 2014B:
@@ -364,13 +341,13 @@ def main():
     w_range = np.vstack((w_lowers, w_uppers)).T
     Omega_range = np.vstack((Omega_lowers, Omega_uppers)).T
     
-    np.savetxt("P_Intervals_J1052.txt", P_range, fmt="%s")
-    np.savetxt("T_Intervals_J1052.txt", T_range, fmt="%s")
-    np.savetxt("e_Intervals_J1052.txt", e_range, fmt="%s")
-    np.savetxt("a_Intervals_J1052.txt", a_range, fmt="%s")
-    np.savetxt("i_Intervals_J1052.txt", i_range, fmt="%s")
-    np.savetxt("w_Intervals_J1052.txt", w_range, fmt="%s")
-    np.savetxt("Omega_Intervals_J1052.txt", Omega_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_J1052.txt", P_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_J1052.txt", T_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_J1052.txt", e_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_J1052.txt", a_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_J1052.txt", i_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_J1052.txt", w_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_J1052.txt", Omega_range, fmt="%s")
     
     P_unit = "years"
     P_name = "period"
