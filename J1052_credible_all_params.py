@@ -108,7 +108,7 @@ def main():
             print()
             print("Eccentricity (e): %0.3f to %0.3f" %(e_low, e_high))
             print()
-            print("Semi major axis (a): %0.3f to %0.3f AU" %(a_low, a_high))
+            print("Semi major axis (a): %0.3f to %0.3f arcseconds" %(a_low, a_high))
             print()
             print("Inclination (i): %0.3f to %0.3f degrees" %(i_low, i_high))
             print()
@@ -241,7 +241,7 @@ def main():
         # Resample the above grid by an extra factor of N, following 
         # method in Lucy 2014B:
     
-        N = 50
+        N = 20
     
         w_N, a_N, i_N, T_N, e_N, P_N, Omega_N, new_likelihood, script_ABFG = orbits.correct_orbit_likelihood(\
                                                                                             P_array, e_array, \
@@ -383,7 +383,7 @@ def main():
     e_name = "eccentricity"
     print_min_max_avg(e_lowers, e_uppers, num_iters, e_name)
     
-    a_unit = "AU"
+    a_unit = "arcseconds"
     a_name = "semi-major axis"
     print_min_max_avg(a_lowers, a_uppers, num_iters, a_name, a_unit)
     

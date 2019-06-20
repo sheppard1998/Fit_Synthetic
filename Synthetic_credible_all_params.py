@@ -72,10 +72,8 @@ def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     
 def main():
     
-    num_iters = 1
-    #int(input("Number of iterations: "))
-    print_every = 1
-    #int(input("Checkpoint amount of iterations: "))
+    num_iters = int(input("Number of iterations: "))
+    print_every = int(input("Checkpoint amount of iterations: "))
     iter_correct_a = 0
     iter_correct_e = 0
     iter_correct_i = 0
@@ -110,7 +108,7 @@ def main():
             print()
             print("Eccentricity (e): %0.3f to %0.3f" %(e_low, e_high))
             print()
-            print("Semi major axis (a): %0.3f to %0.3f arcsec" %(a_low, a_high))
+            print("Semi major axis (a): %0.3f to %0.3f arcseconds" %(a_low, a_high))
             print()
             print("Inclination (i): %0.3f to %0.3f degrees" %(i_low, i_high))
             print()
@@ -159,14 +157,12 @@ def main():
         
         f_orb_Syn = 0.4
         num_obs_Syn = 15
-        times_obs_Syn = np.zeros(15)
-        for i in range(num_obs_Syn):
-            #Eq. 10 L14
-            times_obs_Syn[i] = f_orb_Syn*P_Syn*i/(num_obs_Syn-1)
+        times_obs_Syn = np.zeros(num_obs_Syn)
+        times_obs_Syn = f_orb_Syn*P_Syn*np.arange(num_obs_Syn)/(num_obs_Syn-1)
     
         ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
-        ra_errs_Syn = 0.025*ra_theo_Syn
-        dec_errs_Syn = 0.025*dec_theo_Syn
+        ra_errs_Syn = 0.075*ra_theo_Syn
+        dec_errs_Syn = 0.075*dec_theo_Syn
     
         #Eq. 11 L14
         ra_obs_Syn = ra_theo_Syn + np.random.normal(0, abs(ra_errs_Syn))
@@ -400,13 +396,13 @@ def main():
     w_range = np.vstack((w_lowers, w_uppers)).T
     Omega_range = np.vstack((Omega_lowers, Omega_uppers)).T
     
-    np.savetxt("P_Intervals_Synthetic.txt", P_range, fmt="%s")
-    np.savetxt("T_Intervals_Synthetic.txt", T_range, fmt="%s")
-    np.savetxt("e_Intervals_Synthetic.txt", e_range, fmt="%s")
-    np.savetxt("a_Intervals_Synthetic.txt", a_range, fmt="%s")
-    np.savetxt("i_Intervals_Synthetic.txt", i_range, fmt="%s")
-    np.savetxt("w_Intervals_Synthetic.txt", w_range, fmt="%s")
-    np.savetxt("Omega_Intervals_Synthetic.txt", Omega_range, fmt="%s")
+    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.5.txt", P_range, fmt="%s")
+    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.5.txt", T_range, fmt="%s")
+    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.5.txt", e_range, fmt="%s")
+    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.5.txt", a_range, fmt="%s")
+    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.5.txt", i_range, fmt="%s")
+    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.5.txt", w_range, fmt="%s")
+    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.5.txt", Omega_range, fmt="%s")
     
     P_unit = "years"
     P_name = "period"
@@ -419,7 +415,7 @@ def main():
     e_name = "eccentricity"
     print_min_max_avg(e_lowers, e_uppers, num_iters, e_name)
     
-    a_unit = "arcsec"
+    a_unit = "arcseconds"
     a_name = "semi-major axis"
     print_min_max_avg(a_lowers, a_uppers, num_iters, a_name, a_unit)
     

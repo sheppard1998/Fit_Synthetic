@@ -881,7 +881,7 @@ def correct_orbit_likelihood(P_in, e_in, T_in, \
     return w, a, i, T, e, P, Omega, likelihood, script_ABFG
 
 
-def credible_interval(parameter, likelihood, n_sigma=1, log = False):
+def credible_interval(parameter, likelihood, n_sigma=np.array([1]), log = False):
     '''For the input orbital parameter array and likelihood array,
     find the likelihood-weighted mean and +/- n_sigma credible
     interval, assuming the "sigma" here denotes probability intervals
@@ -911,6 +911,7 @@ def credible_interval(parameter, likelihood, n_sigma=1, log = False):
 
     # Get the probability bounds from the cumulative
     # probability distribution function: 
+    
     upper_prob = norm.cdf(abs(n_sigma))
     lower_prob = 1. - upper_prob
 
@@ -932,10 +933,10 @@ def credible_interval(parameter, likelihood, n_sigma=1, log = False):
     # Now get the cumulative sum along the likelihood array
     # so we can find the desired probability points:
     cum_likelihood = np.cumsum(sorted_likelihood)
-
+    
     low_ind = np.searchsorted(cum_likelihood, lower_prob)
     high_ind = np.searchsorted(cum_likelihood, upper_prob)
-
+    
     low_val = sorted_param[low_ind]
     high_val = sorted_param[high_ind]
 
@@ -944,8 +945,8 @@ def credible_interval(parameter, likelihood, n_sigma=1, log = False):
     
     if log == True:
         # reverse log calculation
-        low_val = 10**low_val
-        high_val = 10**high_val
+        low_val[i] = 10**low_val
+        high_val[i] = 10**high_val
         mean_val = 10**mean_val
         
     return mean_val, low_val, high_val
