@@ -16,8 +16,6 @@ from __future__ import print_function, division
 # Import the key packages we need:
 import numpy as np
 
-from astropy.table import Table
-
 import time as Time
 
 import orbits
