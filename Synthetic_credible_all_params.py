@@ -15,20 +15,10 @@ from __future__ import print_function, division
 
 # Import the key packages we need:
 import numpy as np
-import matplotlib.pyplot as plt
-# Make default font a bit bigger:
-import matplotlib
-matplotlib.rcParams['font.size'] = 18   # Font size in points
 
-from astropy.table import Table
 import time as Time
 
 import orbits
-
-import random
-
-# Plots show in the notebook, not pop-up:
-#%matplotlib inline
 
 def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     '''
@@ -170,10 +160,6 @@ def main():
     
         overall_start_time = Time.time()
         
-        # Name of the system we're fitting: 
-        star_name = "Synthetic"
-    
-    
         # Careful with our x-y coordinate system - not the same as RA-Dec!
         x_obs = dec_obs_Syn
         y_obs = ra_obs_Syn
@@ -238,16 +224,6 @@ def main():
     
         # Then take these and get the other orbital parameters, too: 
         w_array, a_array, i_array, Omega_array = orbits.Campbell_from_Thiele_Innes(A_array, B_array, F_array, G_array)
-    
-        # Not using a mass prior so just set to 1:
-        mass_prior = 1
-    
-        # Calculate reduced chi-squared: 
-        reduced_chi_squared = chi_squared/(times_obs.size - 3)
-    
-        # Likelihood of a given model is exp(-chi_squared/2); calculate while
-        # also taking the prior into account:
-        likelihood = np.exp(-0.5*reduced_chi_squared) * mass_prior
         
         # Now get a more refined version of the mass posterior: 
         # Resample the above grid by an extra factor of N, following 
