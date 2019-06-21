@@ -90,6 +90,31 @@ def main():
     Omega_uppers = np.zeros(num_iters)
     Omega_lowers = np.zeros(num_iters)
     
+    # Read in orbital data, which we have saved in a file. 
+    # Positions are in milliarcsecond units.  Different conversions
+    # might be needed if your data are in different units.
+    datafile = "SDSS_J1052.txt"
+    t = Table.read(datafile, format='ascii.commented_header')
+    
+    # Convert the position angle and separation to RA and Dec separation: 
+    ra_obs, dec_obs, ra_errs, dec_errs = orbits.rho_PA_to_RA_Dec( t['rho'],t['PA'], \
+                                                                      t['rho_err'], t['PA_err'])
+    
+    x_errs = dec_errs
+    y_errs = ra_errs
+    # Code below assumes dates in years.  Convert if necessary. 
+    times_obs = t['Date']
+    
+    # Measured values:
+    #c.f. Dupuy et al.
+    lit_a = 70.59
+    lit_i = 62
+    #No lit_T as Dupuy et al. doesn't specify one to test against 
+    lit_e = 0.1387
+    lit_P = 8.614
+    lit_Omega = 126.7
+    lit_w = 186.5
+    
     for k in range(num_iters):
         if(iters_comp % print_every == 0 and iters_comp != 0):
             print("Most recent credibility interval guesses: ")
@@ -136,26 +161,11 @@ def main():
             print()
         
         overall_start_time = Time.time()
-        
-        # Read in orbital data, which we have saved in a file. 
-        # Positions are in milliarcsecond units.  Different conversions
-        # might be needed if your data are in different units.
-        datafile = "SDSS_J1052.txt"
-        t = Table.read(datafile, format='ascii.commented_header')
-        
-        # Convert the position angle and separation to RA and Dec separation: 
-        ra_obs, dec_obs, ra_errs, dec_errs = orbits.rho_PA_to_RA_Dec( t['rho'],t['PA'], \
-                                                                      t['rho_err'], t['PA_err'])
-        
+                
         # Careful with our x-y coordinate system - not the same as RA-Dec!
         x_obs = dec_obs + np.random.normal(0, abs(dec_errs))
         y_obs = ra_obs + np.random.normal(0, abs(ra_errs))
-        x_errs = dec_errs
-        y_errs = ra_errs
-        
-        # Code below assumes dates in years.  Convert if necessary. 
-        times_obs = t['Date']
-        
+
         # Now that we have the data, find the best fit
         # orbit by searching over a range of parameters:
         
@@ -248,16 +258,6 @@ def main():
 
         # Get the credible interval for the longitude of periastron: 
         w_mean, w_low, w_high = orbits.credible_interval(w_N, new_likelihood)
-  
-        # Measured values:
-        #c.f. Dupuy et al.
-        lit_a = 70.59
-        lit_i = 62
-        #No lit_T as Dupuy et al. doesn't specify one to test against 
-        lit_e = 0.1387
-        lit_P = 8.614
-        lit_Omega = 126.7
-        lit_w = 186.5
         
         #Returning to degrees
         w_mean = np.rad2deg(w_mean)

@@ -88,6 +88,41 @@ def main():
     Omega_uppers = np.zeros(num_iters)
     Omega_lowers = np.zeros(num_iters)
     
+    #Eq.8 L14
+    P_Syn = 100
+    tau_Syn = 0.4
+    e_Syn = 0.5
+    a_Syn = 1
+    i_Syn = np.radians(60)
+    w_Syn = np.radians(250)
+    Omega_Syn = np.radians(120)
+    T_Syn = tau_Syn * P_Syn 
+    A_Syn, B_Syn, F_Syn, G_Syn = orbits.Thiele_Innes_from_Campbell(w_Syn, a_Syn, i_Syn, Omega_Syn)
+    
+    f_orb_Syn = 0.4
+    num_obs_Syn = 15
+    times_obs_Syn = np.zeros(num_obs_Syn)
+    times_obs_Syn = f_orb_Syn*P_Syn*np.arange(num_obs_Syn)/(num_obs_Syn-1)
+    
+    ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
+    err_size = 0.075*a_Syn
+    ra_errs_Syn = err_size*np.ones(num_obs_Syn)
+    dec_errs_Syn = err_size*np.ones(num_obs_Syn)
+    
+    x_errs = dec_errs_Syn
+    y_errs = ra_errs_Syn
+    times_obs = times_obs_Syn
+    
+    # Measured values:
+    #c.f. Fantino & Casotto pg. 11
+    lit_a = a_Syn
+    lit_i = np.rad2deg(i_Syn)
+    lit_T = T_Syn
+    lit_e = e_Syn
+    lit_P = P_Syn
+    lit_Omega = np.rad2deg(Omega_Syn)
+    lit_w = np.rad2deg(w_Syn)
+    
     for k in range(num_iters):
         if(iters_comp % print_every == 0 and iters_comp != 0):
             print("Most recent credibility interval guesses: ")
@@ -133,28 +168,6 @@ def main():
             print("--------------------------------------------------")
             print()
             
-            
-        #Eq.8 L14
-        P_Syn = 100
-        tau_Syn = 0.4
-        e_Syn = 0.5
-        a_Syn = 1
-        i_Syn = np.radians(60)
-        w_Syn = np.radians(250)
-        Omega_Syn = np.radians(120)
-        T_Syn = tau_Syn * P_Syn 
-        A_Syn, B_Syn, F_Syn, G_Syn = orbits.Thiele_Innes_from_Campbell(w_Syn, a_Syn, i_Syn, Omega_Syn)
-        
-        f_orb_Syn = 0.4
-        num_obs_Syn = 15
-        times_obs_Syn = np.zeros(num_obs_Syn)
-        times_obs_Syn = f_orb_Syn*P_Syn*np.arange(num_obs_Syn)/(num_obs_Syn-1)
-    
-        ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
-        err_size = 0.075*a_Syn
-        ra_errs_Syn = err_size*np.ones(num_obs_Syn)
-        dec_errs_Syn = err_size*np.ones(num_obs_Syn)
-    
         #Eq. 11 L14
         ra_obs_Syn = ra_theo_Syn + np.random.normal(0, ra_errs_Syn)
         dec_obs_Syn = dec_theo_Syn + np.random.normal(0, dec_errs_Syn)
@@ -164,9 +177,6 @@ def main():
         # Careful with our x-y coordinate system - not the same as RA-Dec!
         x_obs = dec_obs_Syn
         y_obs = ra_obs_Syn
-        x_errs = dec_errs_Syn
-        y_errs = ra_errs_Syn
-        times_obs = times_obs_Syn
         
         # Now that we have the data, find the best fit
         # orbit by searching over a range of parameters:
@@ -280,16 +290,6 @@ def main():
             w_mean += np.pi
             w_low += np.pi
             w_high += np.pi
-        
-        # Measured values:
-        #c.f. Fantino & Casotto pg. 11
-        lit_a = a_Syn
-        lit_i = np.rad2deg(i_Syn)
-        lit_T = T_Syn
-        lit_e = e_Syn
-        lit_P = P_Syn
-        lit_Omega = np.rad2deg(Omega_Syn)
-        lit_w = np.rad2deg(w_Syn)
         
         #Returning to degrees
         w_mean = np.rad2deg(w_mean)
