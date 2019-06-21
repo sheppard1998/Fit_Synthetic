@@ -214,8 +214,8 @@ def main():
     
         e_max = 0.99
     
-        logP_min = np.log10(70)
-        logP_max = np.log10(130)
+        logP_min = np.log10(f_orb_Syn*P_Syn)
+        logP_max = np.log10(1000)
         P_array, e_array, T_array = orbits.grid_P_e_T(n, logP_min, logP_max, T_start=data_start, e_max=e_max)
     
     
@@ -228,7 +228,7 @@ def main():
         # Now optimize the grid a bit - only keep values within the bounds that give 
         # delta chi squared less than 10 from the best fit found so far: 
         best_chi_squared = np.min(chi_squared)
-        delta_chi_squared = 10
+        delta_chi_squared = 21.85
     
         good_inds = np.where((chi_squared - best_chi_squared) < delta_chi_squared)
     
@@ -251,12 +251,12 @@ def main():
         # Then take these and get the other orbital parameters, too: 
         w_array, a_array, i_array, Omega_array = orbits.Campbell_from_Thiele_Innes(A_array, B_array, F_array, G_array)
     
-        
+        '''
         # Now get a more refined version of the mass posterior: 
         # Resample the above grid by an extra factor of N, following 
         # method in Lucy 2014B:
     
-        N = 20
+        N = 30
     
         w_N, a_N, i_N, T_N, e_N, P_N, Omega_N, new_likelihood, script_ABFG = orbits.correct_orbit_likelihood(\
                                                                                             P_array, e_array, \
@@ -264,6 +264,12 @@ def main():
                                                                                             B_array, F_array, \
                                                                                             G_array, sigma_list,\
                                                                                             chi_squared, N)
+        '''
+        
+        w_N, a_N, i_N, T_N, e_N, P_N, Omega_N, new_likelihood = w_array, a_array, \
+                i_array, T_array, e_array, P_array, Omega_array, \
+                        np.exp(-0.5*chi_squared)
+        
         
         # Get the credible interval for the semimajor axis: 
         a_mean, a_low, a_high = orbits.credible_interval(a_N, new_likelihood, sig_int)
@@ -406,13 +412,13 @@ def main():
             w_range = np.vstack((w_lowers[i], w_uppers[i])).T
             Omega_range = np.vstack((Omega_lowers[i], Omega_uppers[i])).T
             
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.3.txt", P_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.3.txt", T_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.3.txt", e_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.3.txt", a_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.3.txt", i_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.3.txt", w_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.3.txt", Omega_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.3_NORESAMPLE.txt", P_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.3_NORESAMPLE.txt", T_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.3_NORESAMPLE.txt", e_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.3_NORESAMPLE.txt", a_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.3_NORESAMPLE.txt", i_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.3_NORESAMPLE.txt", w_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.3_NORESAMPLE.txt", Omega_range, fmt="%s")
         
         elif (int_prcnt[i] == 95.5):
             P_range = np.vstack((P_lowers[i], P_uppers[i])).T
@@ -423,13 +429,13 @@ def main():
             w_range = np.vstack((w_lowers[i], w_uppers[i])).T
             Omega_range = np.vstack((Omega_lowers[i], Omega_uppers[i])).T
             
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_95.5.txt", P_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_95.5.txt", T_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_95.5.txt", e_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_95.5.txt", a_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_95.5.txt", i_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_95.5.txt", w_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_95.5.txt", Omega_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_95.5_NORESAMPLE.txt", P_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_95.5_NORESAMPLE.txt", T_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_95.5_NORESAMPLE.txt", e_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_95.5_NORESAMPLE.txt", a_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_95.5_NORESAMPLE.txt", i_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_95.5_NORESAMPLE.txt", w_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_95.5_NORESAMPLE.txt", Omega_range, fmt="%s")
         
         elif (int_prcnt[i] == 99.7):
             P_range = np.vstack((P_lowers[i], P_uppers[i])).T
@@ -440,13 +446,13 @@ def main():
             w_range = np.vstack((w_lowers[i], w_uppers[i])).T
             Omega_range = np.vstack((Omega_lowers[i], Omega_uppers[i])).T
             
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_99.7.txt", P_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_99.7.txt", T_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_99.7.txt", e_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_99.7.txt", a_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_99.7.txt", i_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_99.7.txt", w_range, fmt="%s")
-            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_99.7.txt", Omega_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_99.7_NORESAMPLE.txt", P_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_99.7_NORESAMPLE.txt", T_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_99.7_NORESAMPLE.txt", e_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_99.7_NORESAMPLE.txt", a_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_99.7_NORESAMPLE.txt", i_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_99.7_NORESAMPLE.txt", w_range, fmt="%s")
+            np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_99.7_NORESAMPLE.txt", Omega_range, fmt="%s")
             
     P_unit = "years"
     P_name = "period"
