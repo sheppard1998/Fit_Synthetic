@@ -167,12 +167,13 @@ def main():
         times_obs_Syn = f_orb_Syn*P_Syn*np.arange(num_obs_Syn)/(num_obs_Syn-1)
     
         ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
-        ra_errs_Syn = 0.075*ra_theo_Syn
-        dec_errs_Syn = 0.075*dec_theo_Syn
+        err_size = 0.075*a_Syn
+        ra_errs_Syn = err_size*np.ones(num_obs_Syn)
+        dec_errs_Syn = err_size*np.ones(num_obs_Syn)
     
         #Eq. 11 L14
-        ra_obs_Syn = ra_theo_Syn + np.random.normal(0, abs(ra_errs_Syn))
-        dec_obs_Syn = dec_theo_Syn + np.random.normal(0, abs(dec_errs_Syn))
+        ra_obs_Syn = ra_theo_Syn + np.random.normal(0, ra_errs_Syn)
+        dec_obs_Syn = dec_theo_Syn + np.random.normal(0, dec_errs_Syn)
     
         overall_start_time = Time.time()    
     
