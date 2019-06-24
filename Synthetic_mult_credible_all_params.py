@@ -128,13 +128,13 @@ def main():
     T_Syn = tau_Syn * P_Syn 
     A_Syn, B_Syn, F_Syn, G_Syn = orbits.Thiele_Innes_from_Campbell(w_Syn, a_Syn, i_Syn, Omega_Syn)
     
-    f_orb_Syn = 0.4
+    f_orb_Syn = 0.6
     num_obs_Syn = 15
     times_obs_Syn = np.zeros(15)
     times_obs_Syn = f_orb_Syn*P_Syn*np.arange(num_obs_Syn)/(num_obs_Syn-1)
     
     ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
-    err_size = 0.075*a_Syn
+    err_size = 0.05*a_Syn
     ra_errs_Syn = err_size*np.ones(num_obs_Syn)
     dec_errs_Syn = err_size*np.ones(num_obs_Syn)
     x_errs = dec_errs_Syn
@@ -251,12 +251,12 @@ def main():
         # Then take these and get the other orbital parameters, too: 
         w_array, a_array, i_array, Omega_array = orbits.Campbell_from_Thiele_Innes(A_array, B_array, F_array, G_array)
     
-        '''
+        
         # Now get a more refined version of the mass posterior: 
         # Resample the above grid by an extra factor of N, following 
         # method in Lucy 2014B:
     
-        N = 30
+        N = 50
     
         w_N, a_N, i_N, T_N, e_N, P_N, Omega_N, new_likelihood, script_ABFG = orbits.correct_orbit_likelihood(\
                                                                                             P_array, e_array, \
@@ -269,7 +269,7 @@ def main():
         w_N, a_N, i_N, T_N, e_N, P_N, Omega_N, new_likelihood = w_array, a_array, \
                 i_array, T_array, e_array, P_array, Omega_array, \
                         np.exp(-0.5*chi_squared)
-        
+        '''
         
         # Get the credible interval for the semimajor axis: 
         a_mean, a_low, a_high = orbits.credible_interval(a_N, new_likelihood, sig_int)
