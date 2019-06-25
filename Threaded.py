@@ -63,7 +63,7 @@ def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     print("The average range of the interval is %0.3f %s after %d runs" %(range_avg, unit, num_iters))
     print("--------------------------------------------------")
     
-def computation(correct, runtime, lowers, uppers):
+def computation(correct, lowers, uppers):
     #Eq.8 L14
     P_Syn = 100
     tau_Syn = 0.4
@@ -128,8 +128,8 @@ def computation(correct, runtime, lowers, uppers):
     
     e_max = 0.99
     
-    logP_min = np.log10(70)
-    logP_max = np.log10(130)
+    logP_min = np.log10(P_Syn*f_orb_Syn)
+    logP_max = np.log10(1000)
     P_array, e_array, T_array = orbits.grid_P_e_T(n, logP_min, logP_max, T_start=data_start, e_max=e_max)
     
     
@@ -236,19 +236,19 @@ def computation(correct, runtime, lowers, uppers):
     #Comparison with true values
     #Remembering standard output of P, T, e, a, i, w, Omega
     if (lit_P > P_low and lit_P < P_high):
-        correct[0] += 1    
+        correct[0] = 1    
     if (lit_T > T_low and lit_T < T_high):
-        correct[1] += 1
+        correct[1] = 1
     if (lit_e > e_low and lit_e < e_high):
-        correct[2] += 1
+        correct[2] = 1
     if (lit_a > a_low and lit_a < a_high):
-        correct[3] += 1
+        correct[3] = 1
     if (lit_i > i_low and lit_i < i_high):
-        correct[4] += 1  
+        correct[4] = 1  
     if (lit_w > w_low and lit_w < w_high):
-        correct[5] += 1  
+        correct[5] = 1  
     if (lit_Omega > Omega_low and lit_Omega < Omega_high):
-        correct[6] += 1
+        correct[6] = 1
 
 
     #Remembering standard output of P, T, e, a, i, w, Omega
@@ -278,7 +278,6 @@ def main():
     correct_T = 0
     correct_Omega = 0
     correct_w = 0
-    runtimes = np.zeros(num_iters)
     a_uppers = np.zeros(num_iters)
     a_lowers = np.zeros(num_iters)
     w_uppers = np.zeros(num_iters)
@@ -296,14 +295,13 @@ def main():
     
     #Make use of standard output of P, T, e, a, i, w, Omega
     result_correct = [0,0,0,0,0,0,0]
-    runtime = [0]
     result_lowers = [0,0,0,0,0,0,0]
     result_uppers = [0,0,0,0,0,0,0]
     
     
     threads = []
     for i in range(num_iters):
-        t = threading.Thread(target=computation, args=(result_correct, runtime, result_lowers, result_uppers))
+        t = threading.Thread(target=computation, args=(result_correct, result_lowers, result_uppers))
         threads.append(t)
         if (i == 0):
             overall_start_time = Time.time()
@@ -313,14 +311,13 @@ def main():
         threads[i].join()
         if (i == num_iters - 1):
             end_time = Time.time()
-        correct_P = result_correct[0]
-        correct_T = result_correct[1]
-        correct_e = result_correct[2]
-        correct_a = result_correct[3]
-        correct_i = result_correct[4]
-        correct_w = result_correct[5]
-        correct_Omega = result_correct[6]
-        runtimes[i] = runtime[0]
+        correct_P += result_correct[0]
+        correct_T += result_correct[1]
+        correct_e += result_correct[2]
+        correct_a += result_correct[3]
+        correct_i += result_correct[4]
+        correct_w += result_correct[5]
+        correct_Omega += result_correct[6]
         P_uppers[i] = result_uppers[0]
         T_uppers[i] = result_uppers[1]
         e_uppers[i] = result_uppers[2]
@@ -357,7 +354,7 @@ def main():
     cov_frac_Omega = correct_Omega/num_iters
     print("Coverage fraction for position angle of ascending node (Omega) stands at %0.3f over %d runs" %(cov_frac_Omega, num_iters))
     print()
-    print(runtimes)
+    print(end_time - overall_start_time)
     avg_runtime = (end_time - overall_start_time)/num_iters
     print("The average runtime of one iteration stands at %0.3f seconds after %d runs" %(avg_runtime, num_iters))
     print("--------------------------------------------------")
@@ -381,29 +378,29 @@ def main():
     
     P_unit = "years"
     P_name = "period"
-    print_min_max_avg(P_lowers, P_uppers, num_iters, P_name, P_unit)
+    #print_min_max_avg(P_lowers, P_uppers, num_iters, P_name, P_unit)
     
     T_unit = "years"
     T_name = "time of periastron passage"
-    print_min_max_avg(T_lowers, T_uppers, num_iters, T_name, T_unit)
+    #print_min_max_avg(T_lowers, T_uppers, num_iters, T_name, T_unit)
     
     e_name = "eccentricity"
-    print_min_max_avg(e_lowers, e_uppers, num_iters, e_name)
+    #print_min_max_avg(e_lowers, e_uppers, num_iters, e_name)
     
     a_unit = "arcseconds"
     a_name = "semi-major axis"
-    print_min_max_avg(a_lowers, a_uppers, num_iters, a_name, a_unit)
+    #print_min_max_avg(a_lowers, a_uppers, num_iters, a_name, a_unit)
     
     i_unit = "degrees"
     i_name = "inclination"
-    print_min_max_avg(i_lowers, i_uppers, num_iters, i_name, i_unit)
+    #print_min_max_avg(i_lowers, i_uppers, num_iters, i_name, i_unit)
     
     w_unit = "degrees"
     w_name = "longitude of periastron"
-    print_min_max_avg(w_lowers, w_uppers, num_iters, w_name, w_unit)
+    #print_min_max_avg(w_lowers, w_uppers, num_iters, w_name, w_unit)
     
     Omega_unit = "degrees"
     Omega_name = "position angle of ascending node"
-    print_min_max_avg(Omega_lowers, Omega_uppers, num_iters, Omega_name, Omega_unit)
+    #print_min_max_avg(Omega_lowers, Omega_uppers, num_iters, Omega_name, Omega_unit)
     
 main()

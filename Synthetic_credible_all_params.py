@@ -99,13 +99,13 @@ def main():
     T_Syn = tau_Syn * P_Syn 
     A_Syn, B_Syn, F_Syn, G_Syn = orbits.Thiele_Innes_from_Campbell(w_Syn, a_Syn, i_Syn, Omega_Syn)
     
-    f_orb_Syn = 0.4
+    f_orb_Syn = 0.6
     num_obs_Syn = 15
     times_obs_Syn = np.zeros(num_obs_Syn)
     times_obs_Syn = f_orb_Syn*P_Syn*np.arange(num_obs_Syn)/(num_obs_Syn-1)
     
     ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
-    err_size = 0.075*a_Syn
+    err_size = 0.05*a_Syn
     ra_errs_Syn = err_size*np.ones(num_obs_Syn)
     dec_errs_Syn = err_size*np.ones(num_obs_Syn)
     
@@ -199,8 +199,8 @@ def main():
     
         e_max = 0.99
     
-        logP_min = np.log10(70)
-        logP_max = np.log10(130)
+        logP_min = np.log10(f_orb_Syn*P_Syn)
+        logP_max = np.log10(1000)
         P_array, e_array, T_array = orbits.grid_P_e_T(n, logP_min, logP_max, T_start=data_start, e_max=e_max)
     
     
@@ -213,7 +213,7 @@ def main():
         # Now optimize the grid a bit - only keep values within the bounds that give 
         # delta chi squared less than 10 from the best fit found so far: 
         best_chi_squared = np.min(chi_squared)
-        delta_chi_squared = 10
+        delta_chi_squared = 21.85
     
         good_inds = np.where((chi_squared - best_chi_squared) < delta_chi_squared)
     
@@ -240,7 +240,7 @@ def main():
         # Resample the above grid by an extra factor of N, following 
         # method in Lucy 2014B:
     
-        N = 20
+        N = 50
     
         w_N, a_N, i_N, T_N, e_N, P_N, Omega_N, new_likelihood, script_ABFG = orbits.correct_orbit_likelihood(\
                                                                                             P_array, e_array, \
@@ -373,13 +373,13 @@ def main():
     w_range = np.vstack((w_lowers, w_uppers)).T
     Omega_range = np.vstack((Omega_lowers, Omega_uppers)).T
     
-    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.5.txt", P_range, fmt="%s")
-    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.5.txt", T_range, fmt="%s")
-    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.5.txt", e_range, fmt="%s")
-    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.5.txt", a_range, fmt="%s")
-    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.5.txt", i_range, fmt="%s")
-    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.5.txt", w_range, fmt="%s")
-    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.5.txt", Omega_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.3.txt", P_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.3.txt", T_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.3.txt", e_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.3.txt", a_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.3.txt", i_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.3.txt", w_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.3.txt", Omega_range, fmt="%s")
     
     P_unit = "years"
     P_name = "period"
