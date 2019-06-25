@@ -373,13 +373,13 @@ def main():
     w_range = np.vstack((w_lowers, w_uppers)).T
     Omega_range = np.vstack((Omega_lowers, Omega_uppers)).T
     
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.5.txt", P_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.5.txt", T_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.5.txt", e_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.5.txt", a_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.5.txt", i_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.5.txt", w_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.5.txt", Omega_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.5.txt", P_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.5.txt", T_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.5.txt", e_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.5.txt", a_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.5.txt", i_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.5.txt", w_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.5.txt", Omega_range, fmt="%s")
     
     P_unit = "years"
     P_name = "period"

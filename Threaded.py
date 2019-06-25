@@ -63,47 +63,7 @@ def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     print("The average range of the interval is %0.3f %s after %d runs" %(range_avg, unit, num_iters))
     print("--------------------------------------------------")
     
-    
-def main():
-    
-    num_iters = int(input("Number of iterations: "))
-    iter_correct_a = 0
-    iter_correct_e = 0
-    iter_correct_i = 0
-    iter_correct_P = 0
-    iter_correct_T = 0
-    iter_correct_Omega = 0
-    iter_correct_w = 0
-    correct = [iter_correct_P, iter_correct_e, iter_correct_T, iter_correct_a, \
-               iter_correct_i, iter_correct_w, iter_correct_Omega]
-    runtimes = np.zeros(num_iters)
-    a_uppers = np.zeros(num_iters)
-    a_lowers = np.zeros(num_iters)
-    w_uppers = np.zeros(num_iters)
-    w_lowers = np.zeros(num_iters)
-    i_uppers = np.zeros(num_iters)
-    i_lowers = np.zeros(num_iters)
-    T_uppers = np.zeros(num_iters)
-    T_lowers = np.zeros(num_iters)
-    P_uppers = np.zeros(num_iters)
-    P_lowers = np.zeros(num_iters)
-    e_uppers = np.zeros(num_iters)
-    e_lowers = np.zeros(num_iters)
-    Omega_uppers = np.zeros(num_iters)
-    Omega_lowers = np.zeros(num_iters)
-    lowers = [P_lowers, e_lowers, T_lowers, a_lowers, i_lowers, w_lowers, Omega_lowers]
-    uppers = [P_uppers, e_uppers, T_uppers, a_uppers, i_uppers, w_uppers, Omega_uppers]
-    
-    threads = []
-    for i in range(num_iters):
-        t = threading.Thread(target=computation, args=(correct, runtimes, lowers, uppers))
-        threads.append(t)
-        t.start()
-        
-    for thread in threads:
-        thread.join()
-        
-        
+def computation(correct, runtime, lowers, uppers):
     #Eq.8 L14
     P_Syn = 100
     tau_Syn = 0.4
@@ -142,8 +102,6 @@ def main():
     #Eq. 11 L14
     ra_obs_Syn = ra_theo_Syn + np.random.normal(0, ra_errs_Syn)
     dec_obs_Syn = dec_theo_Syn + np.random.normal(0, dec_errs_Syn)
-
-    overall_start_time = Time.time()
     
     # Careful with our x-y coordinate system - not the same as RA-Dec!
     x_obs = dec_obs_Syn
@@ -276,11 +234,12 @@ def main():
     i_high = np.rad2deg(i_high)
     
     #Comparison with true values
+    #Remembering standard output of P, T, e, a, i, w, Omega
     if (lit_P > P_low and lit_P < P_high):
         correct[0] += 1    
-    if (lit_e > _low and lit_e < e_high):
-        correct[1] += 1
     if (lit_T > T_low and lit_T < T_high):
+        correct[1] += 1
+    if (lit_e > e_low and lit_e < e_high):
         correct[2] += 1
     if (lit_a > a_low and lit_a < a_high):
         correct[3] += 1
@@ -290,46 +249,116 @@ def main():
         correct[5] += 1  
     if (lit_Omega > Omega_low and lit_Omega < Omega_high):
         correct[6] += 1
-        
-        end_time = Time.time()
-        runtimes[k] = end_time - overall_start_time
-        a_uppers[k] = a_high
-        a_lowers[k] = a_low
-        w_uppers[k] = w_high
-        w_lowers[k] = w_low
-        i_uppers[k] = i_high
-        i_lowers[k] = i_low
-        T_uppers[k] = T_high
-        T_lowers[k] = T_low
-        P_uppers[k] = P_high
-        P_lowers[k] = P_low
-        e_uppers[k] = e_high
-        e_lowers[k] = e_low
-        Omega_uppers[k] = Omega_high
-        Omega_lowers[k] = Omega_low
+
+
+    #Remembering standard output of P, T, e, a, i, w, Omega
+    uppers[0] = P_high
+    lowers[0] = P_low
+    uppers[1] = T_high
+    lowers[1] = T_low
+    uppers[2] = e_high
+    lowers[2] = e_low
+    uppers[3] = a_high
+    lowers[3] = a_low
+    uppers[4] = i_high
+    lowers[4] = i_low
+    uppers[5] = w_high
+    lowers[5] = w_low
+    uppers[6] = Omega_high
+    lowers[6] = Omega_low
+
+
+def main():
     
-    cov_frac_P = iter_correct_P/num_iters
+    num_iters = int(input("Number of iterations: "))
+    correct_a = 0
+    correct_e = 0
+    correct_i = 0
+    correct_P = 0
+    correct_T = 0
+    correct_Omega = 0
+    correct_w = 0
+    runtimes = np.zeros(num_iters)
+    a_uppers = np.zeros(num_iters)
+    a_lowers = np.zeros(num_iters)
+    w_uppers = np.zeros(num_iters)
+    w_lowers = np.zeros(num_iters)
+    i_uppers = np.zeros(num_iters)
+    i_lowers = np.zeros(num_iters)
+    T_uppers = np.zeros(num_iters)
+    T_lowers = np.zeros(num_iters)
+    P_uppers = np.zeros(num_iters)
+    P_lowers = np.zeros(num_iters)
+    e_uppers = np.zeros(num_iters)
+    e_lowers = np.zeros(num_iters)
+    Omega_uppers = np.zeros(num_iters)
+    Omega_lowers = np.zeros(num_iters)
+    
+    #Make use of standard output of P, T, e, a, i, w, Omega
+    result_correct = [0,0,0,0,0,0,0]
+    runtime = [0]
+    result_lowers = [0,0,0,0,0,0,0]
+    result_uppers = [0,0,0,0,0,0,0]
+    
+    
+    threads = []
+    for i in range(num_iters):
+        t = threading.Thread(target=computation, args=(result_correct, runtime, result_lowers, result_uppers))
+        threads.append(t)
+        if (i == 0):
+            overall_start_time = Time.time()
+        t.start()
+    
+    for i in range(num_iters):
+        threads[i].join()
+        if (i == num_iters - 1):
+            end_time = Time.time()
+        correct_P = result_correct[0]
+        correct_T = result_correct[1]
+        correct_e = result_correct[2]
+        correct_a = result_correct[3]
+        correct_i = result_correct[4]
+        correct_w = result_correct[5]
+        correct_Omega = result_correct[6]
+        runtimes[i] = runtime[0]
+        P_uppers[i] = result_uppers[0]
+        T_uppers[i] = result_uppers[1]
+        e_uppers[i] = result_uppers[2]
+        a_uppers[i] = result_uppers[3]
+        i_uppers[i] = result_uppers[4]
+        w_uppers[i] = result_uppers[5]
+        Omega_uppers[i] = result_uppers[6]
+        P_lowers[i] = result_lowers[0]
+        T_lowers[i] = result_lowers[1]
+        e_lowers[i] = result_lowers[2]
+        a_lowers[i] = result_lowers[3]
+        i_lowers[i] = result_lowers[4]
+        w_lowers[i] = result_lowers[5]
+        Omega_lowers[i] = result_lowers[6]
+    
+    cov_frac_P = correct_P/num_iters
     print("Coverage fraction for period (P) stands at %0.3f over %d runs" %(cov_frac_P, num_iters))
     print()
-    cov_frac_T = iter_correct_T/num_iters
+    cov_frac_T = correct_T/num_iters
     print("Coverage fraction for time of periastron passage (T) stands at %0.3f over %d runs" %(cov_frac_T, num_iters))
     print()
-    cov_frac_e = iter_correct_e/num_iters
+    cov_frac_e = correct_e/num_iters
     print("Coverage fraction for eccentricity (e) stands at %0.3f over %d runs" %(cov_frac_e, num_iters))
     print()
-    cov_frac_a = iter_correct_a/num_iters
+    cov_frac_a = correct_a/num_iters
     print("Coverage fraction for semi major axis (a) stands at %0.3f over %d runs" %(cov_frac_a, num_iters))
     print()
-    cov_frac_i = iter_correct_i/num_iters
+    cov_frac_i = correct_i/num_iters
     print("Coverage fraction for inclination (i) stands at %0.3f over %d runs" %(cov_frac_i, num_iters))
     print()
-    cov_frac_w = iter_correct_w/num_iters
+    cov_frac_w = correct_w/num_iters
     print("Coverage fraction for longitude of periastron (w) stands at %0.3f over %d runs" %(cov_frac_w, num_iters))
     print()
-    cov_frac_Omega = iter_correct_Omega/num_iters
+    cov_frac_Omega = correct_Omega/num_iters
     print("Coverage fraction for position angle of ascending node (Omega) stands at %0.3f over %d runs" %(cov_frac_Omega, num_iters))
     print()
-    avg_runtime = np.mean(runtimes[:k])
+    print(runtimes)
+    avg_runtime = (end_time - overall_start_time)/num_iters
     print("The average runtime of one iteration stands at %0.3f seconds after %d runs" %(avg_runtime, num_iters))
     print("--------------------------------------------------")
     print()
@@ -342,13 +371,13 @@ def main():
     w_range = np.vstack((w_lowers, w_uppers)).T
     Omega_range = np.vstack((Omega_lowers, Omega_uppers)).T
     
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.5.txt", P_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.5.txt", T_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.5.txt", e_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.5.txt", a_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.5.txt", i_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.5.txt", w_range, fmt="%s")
-    np.savetxt("/Macintosh HD/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.5.txt", Omega_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/P_Intervals_Synthetic_68.5.txt", P_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/T_Intervals_Synthetic_68.5.txt", T_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/e_Intervals_Synthetic_68.5.txt", e_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/a_Intervals_Synthetic_68.5.txt", a_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/i_Intervals_Synthetic_68.5.txt", i_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/w_Intervals_Synthetic_68.5.txt", w_range, fmt="%s")
+    np.savetxt("/Users/ssheppa1/Documents/Notebooks/Fit_Synthetic/Intervals/Omega_Intervals_Synthetic_68.5.txt", Omega_range, fmt="%s")
     
     P_unit = "years"
     P_name = "period"
