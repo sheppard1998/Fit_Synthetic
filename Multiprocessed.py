@@ -24,6 +24,8 @@ import orbits
 
 import multiprocessing as mp
 
+import random
+
 def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     '''
     Create maxima, minima, and mean for upper bound, lower bound, and range of intervals then prints them
@@ -63,51 +65,38 @@ def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     print("The average range of the interval is %0.3f %s after %d runs" %(range_avg, unit, num_iters))
     print("--------------------------------------------------")
     
-def computation(q):
+def computation(i, correct, uppers, lowers, lit_vals, seed):
+    '''
+    Parameters: i - Index of where in the shared lists to append the result
+                correct - Shared list to increment and keep track of number of
+                          correct results
+                uppers - Shared list to append the intervals upper bounds
+                lowers - Shared list to append the intervals lower bounds
+                lit_vals - true values for orbital parameters as well as
+                           crucial calculated theoretical positions and
+                           uncertainties
+                seed - random number between 0 and 100000 times the number of
+                       iterations to ensure the machine does not generate the
+                       same set of random numbers in each process
+    '''
+    np.random.seed(seed)
+    lit_P = lit_vals[0]
+    lit_T = lit_vals[1]
+    lit_e = lit_vals[2]
+    lit_a = lit_vals[3]
+    lit_i = lit_vals[4]
+    lit_w = lit_vals[5]
+    lit_Omega = lit_vals[6]
     
-    #Remembering standard output of P, T, e, a, i, w, Omega
-    correct = [0,0,0,0,0,0,0]
-    uppers = [0,0,0,0,0,0,0]
-    lowers = [0,0,0,0,0,0,0]
+    f_orb_Syn = lit_vals[7]
     
-    #Eq.8 L14
-    P_Syn = 100
-    tau_Syn = 0.4
-    e_Syn = 0.5
-    a_Syn = 1
-    i_Syn = np.radians(60)
-    w_Syn = np.radians(250)
-    Omega_Syn = np.radians(120)
-    T_Syn = tau_Syn * P_Syn 
-    A_Syn, B_Syn, F_Syn, G_Syn = orbits.Thiele_Innes_from_Campbell(w_Syn, a_Syn, i_Syn, Omega_Syn)
-    
-    f_orb_Syn = 0.6
-    num_obs_Syn = 15
-    times_obs_Syn = np.zeros(num_obs_Syn)
-    times_obs_Syn = f_orb_Syn*P_Syn*np.arange(num_obs_Syn)/(num_obs_Syn-1)
-    
-    ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, T_Syn, e_Syn, P_Syn)
-    err_size = 0.05*a_Syn
-    ra_errs_Syn = err_size*np.ones(num_obs_Syn)
-    dec_errs_Syn = err_size*np.ones(num_obs_Syn)
-    
-    x_errs = dec_errs_Syn
-    y_errs = ra_errs_Syn
-    times_obs = times_obs_Syn
-    
-    # Measured values:
-    #c.f. Fantino & Casotto pg. 11
-    lit_a = a_Syn
-    lit_i = np.rad2deg(i_Syn)
-    lit_T = T_Syn
-    lit_e = e_Syn
-    lit_P = P_Syn
-    lit_Omega = np.rad2deg(Omega_Syn)
-    lit_w = np.rad2deg(w_Syn)
+    x_errs = lit_vals[11]
+    y_errs = lit_vals[12]
+    times_obs = lit_vals[8]
         
     #Eq. 11 L14
-    ra_obs_Syn = ra_theo_Syn + np.random.normal(0, ra_errs_Syn)
-    dec_obs_Syn = dec_theo_Syn + np.random.normal(0, dec_errs_Syn)
+    ra_obs_Syn = lit_vals[9] + np.random.normal(0, y_errs)
+    dec_obs_Syn = lit_vals[10] + np.random.normal(0, x_errs)
     
     # Careful with our x-y coordinate system - not the same as RA-Dec!
     x_obs = dec_obs_Syn
@@ -134,7 +123,7 @@ def computation(q):
     
     e_max = 0.99
     
-    logP_min = np.log10(P_Syn*f_orb_Syn)
+    logP_min = np.log10(lit_P*f_orb_Syn)
     logP_max = np.log10(1000)
     P_array, e_array, T_array = orbits.grid_P_e_T(n, logP_min, logP_max, T_start=data_start, e_max=e_max)
     
@@ -204,11 +193,11 @@ def computation(q):
     Omega_mean, Omega_low, Omega_high = orbits.credible_interval(Omega_N, new_likelihood)
     
     #Taking care of Omega offset that occurs in conversion to campbell elements
-    if (Omega_Syn < 0):
+    if (np.deg2rad(lit_Omega) < 0):
         Omega_mean -= np.pi
         Omega_low -= np.pi
         Omega_high -= np.pi
-    elif(Omega_Syn > np.pi):
+    elif(np.deg2rad(lit_Omega) > np.pi):
         Omega_mean += np.pi
         Omega_low += np.pi
         Omega_high += np.pi
@@ -217,11 +206,11 @@ def computation(q):
     w_mean, w_low, w_high = orbits.credible_interval(w_N, new_likelihood)
     
     #Taking care of w offset that occurs in conversion to campbell elements
-    if (Omega_Syn < 0):
+    if (np.deg2rad(lit_Omega) < 0):
         w_mean -= np.pi
         w_low -= np.pi
         w_high -= np.pi
-    elif(Omega_Syn > np.pi):
+    elif(np.deg2rad(lit_Omega) > np.pi):
         w_mean += np.pi
         w_low += np.pi
         w_high += np.pi
@@ -256,33 +245,26 @@ def computation(q):
     if (lit_Omega > Omega_low and lit_Omega < Omega_high):
         correct[6] += 1
 
-
     #Remembering standard output of P, T, e, a, i, w, Omega
-    uppers.append(P_high)
-    lowers.append(P_low)
-    uppers.append(T_high)
-    lowers.append(T_low)
-    uppers.append(e_high)
-    lowers.append(e_low)
-    uppers.append(a_high)
-    lowers.append(a_low)
-    uppers.append(i_high)
-    lowers.append(i_low)
-    uppers.append(w_high)
-    lowers.append(w_low)
-    uppers.append(Omega_high)
-    lowers.append(Omega_low)
+    uppers[i][0] += P_high
+    lowers[i][0] += P_low
+    uppers[i][1] += T_high
+    lowers[i][1] += T_low
+    uppers[i][2] += e_high
+    lowers[i][2] += e_low
+    uppers[i][3] += a_high
+    lowers[i][3] += a_low
+    uppers[i][4] += i_high
+    lowers[i][4] += i_low
+    uppers[i][5] += w_high
+    lowers[i][5] += w_low
+    uppers[i][6] += Omega_high
+    lowers[i][6] += Omega_low
 
 if __name__ == '__main__':
+
     
     num_iters = int(input("Number of iterations: "))
-    correct_a = 0
-    correct_e = 0
-    correct_i = 0
-    correct_P = 0
-    correct_T = 0
-    correct_Omega = 0
-    correct_w = 0
     a_uppers = np.zeros(num_iters)
     a_lowers = np.zeros(num_iters)
     w_uppers = np.zeros(num_iters)
@@ -298,53 +280,77 @@ if __name__ == '__main__':
     Omega_uppers = np.zeros(num_iters)
     Omega_lowers = np.zeros(num_iters)
     
+    lit_P = 100
+    tau_Syn = 0.4
+    lit_e = 0.5
+    lit_a = 1
+    lit_i = 60
+    lit_w = 250
+    lit_Omega = 120
+    lit_T = tau_Syn*lit_P
     
+    f_orb_Syn = 0.6
+    num_obs_Syn = 15
+    times_obs_Syn = f_orb_Syn*lit_P*np.arange(num_obs_Syn)/(num_obs_Syn-1)
+    
+    A_Syn, B_Syn, F_Syn, G_Syn = orbits.Thiele_Innes_from_Campbell(np.radians(lit_w), lit_a, np.radians(lit_i), np.radians(lit_Omega))
+    
+    ra_theo_Syn, dec_theo_Syn = orbits.keplerian_xy_Thiele_Innes(times_obs_Syn, A_Syn, B_Syn, F_Syn, G_Syn, lit_T, lit_e, lit_P)
+    
+    ra_errs = 0.05*lit_a*np.ones(num_obs_Syn)
+    dec_errs = 0.05*lit_a*np.ones(num_obs_Syn)
+    
+    lit_vals = [lit_P, lit_T, lit_e, lit_a, lit_i, lit_w, lit_Omega, f_orb_Syn, times_obs_Syn, \
+                ra_theo_Syn, dec_theo_Syn, ra_errs, dec_errs]
+
     manager = mp.Manager()
-    correct_list = manager.list()
-    correct_list.append([0,0,0,0,0,0,0])
-    upper_list = manager.list()
+    upper_list = manager.list([])
+    lower_list = manager.list([])
+    correct_list = manager.list([0,0,0,0,0,0,0])
     for i in range(num_iters):
-        upper_list.append([0,0,0,0,0,0,0])
-    lower_list = manager.list()
-    for i in range(num_iters):
-        lower_list.append([0,0,0,0,0,0,0])
-    #######
-    #Working on returns from processes
-    #######
+        upper_list.append(manager.list([0,0,0,0,0,0,0]))
+        lower_list.append(manager.list([0,0,0,0,0,0,0]))
     processes = []
     for i in range(num_iters):
-        p = mp.Process(target=computation, args=(i, correct_list, upper_list, lower_list, ))
+        p = mp.Process(target=computation, args=(i, correct_list, upper_list, lower_list, lit_vals, random.randrange(100000*num_iters)))
         processes.append(p)
         if (i == 0):
             overall_start_time = Time.time()
         p.start()
     
     for i in range(num_iters):
-        print(i)
         processes[i].join()
         if (i == num_iters - 1):
             end_time = Time.time()
-        correct_P += correct_list[0]
-        correct_T += correct_list[1]
-        correct_e += correct_list[2]
-        correct_a += correct_list[3]
-        correct_i += correct_list[4]
-        correct_w += correct_list[5]
-        correct_Omega += correct_list[6]
-        P_uppers[i] = upper_list[0]
-        T_uppers[i] = upper_list[1]
-        e_uppers[i] = upper_list[2]
-        a_uppers[i] = upper_list[3]
-        i_uppers[i] = upper_list[4]
-        w_uppers[i] = upper_list[5]
-        Omega_uppers[i] = upper_list[6]
-        P_lowers[i] = lower_list[0]
-        T_lowers[i] = lower_list[1]
-        e_lowers[i] = lower_list[2]
-        a_lowers[i] = lower_list[3]
-        i_lowers[i] = lower_list[4]
-        w_lowers[i] = lower_list[5]
-        Omega_lowers[i] = lower_list[6]
+            
+    #upper_list = list(upper_list)
+    #lower_list = list(lower_list)
+    
+    for i in range(num_iters):
+        #upper_list[i] = list(upper_list[i])
+        #lower_list[i] = list(lower_list[i])
+        P_uppers[i] = upper_list[i][0]
+        T_uppers[i] = upper_list[i][1]
+        e_uppers[i] = upper_list[i][2]
+        a_uppers[i] = upper_list[i][3]
+        i_uppers[i] = upper_list[i][4]
+        w_uppers[i] = upper_list[i][5]
+        Omega_uppers[i] = upper_list[i][6]
+        P_lowers[i] = lower_list[i][0]
+        T_lowers[i] = lower_list[i][1]
+        e_lowers[i] = lower_list[i][2]
+        a_lowers[i] = lower_list[i][3]
+        i_lowers[i] = lower_list[i][4]
+        w_lowers[i] = lower_list[i][5]
+        Omega_lowers[i] = lower_list[i][6]
+    
+    correct_P = correct_list[0]
+    correct_T = correct_list[1]
+    correct_e = correct_list[2]
+    correct_a = correct_list[3]
+    correct_i = correct_list[4]
+    correct_w = correct_list[5]
+    correct_Omega = correct_list[6]
     
     cov_frac_P = correct_P/num_iters
     print("Coverage fraction for period (P) stands at %0.3f over %d runs" %(cov_frac_P, num_iters))
@@ -367,7 +373,6 @@ if __name__ == '__main__':
     cov_frac_Omega = correct_Omega/num_iters
     print("Coverage fraction for position angle of ascending node (Omega) stands at %0.3f over %d runs" %(cov_frac_Omega, num_iters))
     print()
-    print(end_time - overall_start_time)
     avg_runtime = (end_time - overall_start_time)/num_iters
     print("The average runtime of one iteration stands at %0.3f seconds after %d runs" %(avg_runtime, num_iters))
     print("--------------------------------------------------")
@@ -391,27 +396,27 @@ if __name__ == '__main__':
     
     P_unit = "years"
     P_name = "period"
-    #print_min_max_avg(P_lowers, P_uppers, num_iters, P_name, P_unit)
+    print_min_max_avg(P_lowers, P_uppers, num_iters, P_name, P_unit)
     
     T_unit = "years"
     T_name = "time of periastron passage"
-    #print_min_max_avg(T_lowers, T_uppers, num_iters, T_name, T_unit)
+    print_min_max_avg(T_lowers, T_uppers, num_iters, T_name, T_unit)
     
     e_name = "eccentricity"
-    #print_min_max_avg(e_lowers, e_uppers, num_iters, e_name)
-    
+    print_min_max_avg(e_lowers, e_uppers, num_iters, e_name)
+
     a_unit = "arcseconds"
     a_name = "semi-major axis"
-    #print_min_max_avg(a_lowers, a_uppers, num_iters, a_name, a_unit)
+    print_min_max_avg(a_lowers, a_uppers, num_iters, a_name, a_unit)
     
     i_unit = "degrees"
     i_name = "inclination"
-    #print_min_max_avg(i_lowers, i_uppers, num_iters, i_name, i_unit)
+    print_min_max_avg(i_lowers, i_uppers, num_iters, i_name, i_unit)
     
     w_unit = "degrees"
     w_name = "longitude of periastron"
-    #print_min_max_avg(w_lowers, w_uppers, num_iters, w_name, w_unit)
+    print_min_max_avg(w_lowers, w_uppers, num_iters, w_name, w_unit)
     
     Omega_unit = "degrees"
     Omega_name = "position angle of ascending node"
-    #print_min_max_avg(Omega_lowers, Omega_uppers, num_iters, Omega_name, Omega_unit)
+    print_min_max_avg(Omega_lowers, Omega_uppers, num_iters, Omega_name, Omega_unit)
