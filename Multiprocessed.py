@@ -65,21 +65,18 @@ def print_min_max_avg(lower_arr, upper_arr, num_iters, var, unit=""):
     print("The average range of the interval is %0.3f %s after %d runs" %(range_avg, unit, num_iters))
     print("--------------------------------------------------")
     
-def computation(i, correct, uppers, lowers, lit_vals, seed):
+def computation(lit_vals):
     '''
-    Parameters: i - Index of where in the shared lists to append the result
-                correct - Shared list to increment and keep track of number of
-                          correct results
-                uppers - Shared list to append the intervals upper bounds
-                lowers - Shared list to append the intervals lower bounds
-                lit_vals - true values for orbital parameters as well as
-                           crucial calculated theoretical positions and
-                           uncertainties
-                seed - random number between 0 and 100000 times the number of
-                       iterations to ensure the machine does not generate the
-                       same set of random numbers in each process
+    Parameters: lit_vals - true values for orbital parameters as well as
+                           crucial calculated theoretical positions,
+                           uncertainties, random seed
     '''
-    np.random.seed(seed)
+    
+    correct = np.zeros(7)
+    lowers = np.zeros(7)
+    uppers = np.zeros(7)
+    
+    np.random.seed(lit_vals[13])
     lit_P = lit_vals[0]
     lit_T = lit_vals[1]
     lit_e = lit_vals[2]
@@ -231,35 +228,37 @@ def computation(i, correct, uppers, lowers, lit_vals, seed):
     #Comparison with true values
     #Remembering standard output of P, T, e, a, i, w, Omega
     if (lit_P > P_low and lit_P < P_high):
-        correct[0] += 1
+        correct[0] = 1
     if (lit_T > T_low and lit_T < T_high):
-        correct[1] += 1
+        correct[1] = 1
     if (lit_e > e_low and lit_e < e_high):
-        correct[2] += 1
+        correct[2] = 1
     if (lit_a > a_low and lit_a < a_high):
-        correct[3] += 1
+        correct[3] = 1
     if (lit_i > i_low and lit_i < i_high):
-        correct[4] += 1
+        correct[4] = 1
     if (lit_w > w_low and lit_w < w_high):
-        correct[5] += 1 
+        correct[5] = 1 
     if (lit_Omega > Omega_low and lit_Omega < Omega_high):
-        correct[6] += 1
+        correct[6] = 1
 
     #Remembering standard output of P, T, e, a, i, w, Omega
-    uppers[i][0] += P_high
-    lowers[i][0] += P_low
-    uppers[i][1] += T_high
-    lowers[i][1] += T_low
-    uppers[i][2] += e_high
-    lowers[i][2] += e_low
-    uppers[i][3] += a_high
-    lowers[i][3] += a_low
-    uppers[i][4] += i_high
-    lowers[i][4] += i_low
-    uppers[i][5] += w_high
-    lowers[i][5] += w_low
-    uppers[i][6] += Omega_high
-    lowers[i][6] += Omega_low
+    uppers[0] = P_high
+    lowers[0] = P_low
+    uppers[1] = T_high
+    lowers[1] = T_low
+    uppers[2] = e_high
+    lowers[2] = e_low
+    uppers[3] = a_high
+    lowers[3] = a_low
+    uppers[4] = i_high
+    lowers[4] = i_low
+    uppers[5] = w_high
+    lowers[5] = w_low
+    uppers[6] = Omega_high
+    lowers[6] = Omega_low
+    
+    return [uppers, lowers, correct]
 
 if __name__ == '__main__':
 
@@ -300,57 +299,44 @@ if __name__ == '__main__':
     ra_errs = 0.05*lit_a*np.ones(num_obs_Syn)
     dec_errs = 0.05*lit_a*np.ones(num_obs_Syn)
     
-    lit_vals = [lit_P, lit_T, lit_e, lit_a, lit_i, lit_w, lit_Omega, f_orb_Syn, times_obs_Syn, \
-                ra_theo_Syn, dec_theo_Syn, ra_errs, dec_errs]
-
-    manager = mp.Manager()
-    upper_list = manager.list([])
-    lower_list = manager.list([])
-    correct_list = manager.list([0,0,0,0,0,0,0])
-    for i in range(num_iters):
-        upper_list.append(manager.list([0,0,0,0,0,0,0]))
-        lower_list.append(manager.list([0,0,0,0,0,0,0]))
-    processes = []
-    for i in range(num_iters):
-        p = mp.Process(target=computation, args=(i, correct_list, upper_list, lower_list, lit_vals, random.randrange(100000*num_iters)))
-        processes.append(p)
-        if (i == 0):
-            overall_start_time = Time.time()
-        p.start()
+    lit_vals_lol = []
+    seed = np.random.randint(0, 100000*num_iters, num_iters)
     
     for i in range(num_iters):
-        processes[i].join()
-        if (i == num_iters - 1):
-            end_time = Time.time()
+        lit_vals_lol.append([lit_P, lit_T, lit_e, lit_a, lit_i, lit_w, lit_Omega, f_orb_Syn, times_obs_Syn, \
+                ra_theo_Syn, dec_theo_Syn, ra_errs, dec_errs, seed[i]])
+    
+    overall_start_time = Time.time()
+    
+    pool = mp.Pool(processes=4)
+    results = pool.map(computation, lit_vals_lol)
+    
+    end_time = Time.time()
             
-    #upper_list = list(upper_list)
-    #lower_list = list(lower_list)
     
     for i in range(num_iters):
-        #upper_list[i] = list(upper_list[i])
-        #lower_list[i] = list(lower_list[i])
-        P_uppers[i] = upper_list[i][0]
-        T_uppers[i] = upper_list[i][1]
-        e_uppers[i] = upper_list[i][2]
-        a_uppers[i] = upper_list[i][3]
-        i_uppers[i] = upper_list[i][4]
-        w_uppers[i] = upper_list[i][5]
-        Omega_uppers[i] = upper_list[i][6]
-        P_lowers[i] = lower_list[i][0]
-        T_lowers[i] = lower_list[i][1]
-        e_lowers[i] = lower_list[i][2]
-        a_lowers[i] = lower_list[i][3]
-        i_lowers[i] = lower_list[i][4]
-        w_lowers[i] = lower_list[i][5]
-        Omega_lowers[i] = lower_list[i][6]
+        P_uppers[i] = results[i][0][0]
+        T_uppers[i] = results[i][0][1]
+        e_uppers[i] = results[i][0][2]
+        a_uppers[i] = results[i][0][3]
+        i_uppers[i] = results[i][0][4]
+        w_uppers[i] = results[i][0][5]
+        Omega_uppers[i] = results[i][0][6]
+        P_lowers[i] = results[i][1][0]
+        T_lowers[i] = results[i][1][1]
+        e_lowers[i] = results[i][1][2]
+        a_lowers[i] = results[i][1][3]
+        i_lowers[i] = results[i][1][4]
+        w_lowers[i] = results[i][1][5]
+        Omega_lowers[i] = results[i][1][6]
     
-    correct_P = correct_list[0]
-    correct_T = correct_list[1]
-    correct_e = correct_list[2]
-    correct_a = correct_list[3]
-    correct_i = correct_list[4]
-    correct_w = correct_list[5]
-    correct_Omega = correct_list[6]
+    correct_P = results[i][2][0]
+    correct_T = results[i][2][1]
+    correct_e = results[i][2][2]
+    correct_a = results[i][2][3]
+    correct_i = results[i][2][4]
+    correct_w = results[i][2][5]
+    correct_Omega = results[i][2][6]
     
     cov_frac_P = correct_P/num_iters
     print("Coverage fraction for period (P) stands at %0.3f over %d runs" %(cov_frac_P, num_iters))
