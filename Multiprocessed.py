@@ -279,6 +279,14 @@ if __name__ == '__main__':
     Omega_uppers = np.zeros(num_iters)
     Omega_lowers = np.zeros(num_iters)
     
+    correct_P = 0
+    correct_T = 0
+    correct_e = 0
+    correct_a = 0
+    correct_i = 0
+    correct_w = 0
+    correct_Omega = 0
+    
     lit_P = 100
     tau_Syn = 0.4
     lit_e = 0.5
@@ -329,14 +337,13 @@ if __name__ == '__main__':
         i_lowers[i] = results[i][1][4]
         w_lowers[i] = results[i][1][5]
         Omega_lowers[i] = results[i][1][6]
-    
-    correct_P = results[i][2][0]
-    correct_T = results[i][2][1]
-    correct_e = results[i][2][2]
-    correct_a = results[i][2][3]
-    correct_i = results[i][2][4]
-    correct_w = results[i][2][5]
-    correct_Omega = results[i][2][6]
+        correct_P += results[i][2][0]
+        correct_T += results[i][2][1]
+        correct_e += results[i][2][2]
+        correct_a += results[i][2][3]
+        correct_i += results[i][2][4]
+        correct_w += results[i][2][5]
+        correct_Omega += results[i][2][6]
     
     cov_frac_P = correct_P/num_iters
     print("Coverage fraction for period (P) stands at %0.3f over %d runs" %(cov_frac_P, num_iters))
