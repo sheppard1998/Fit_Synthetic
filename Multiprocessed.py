@@ -261,7 +261,6 @@ def computation(lit_vals):
     return [uppers, lowers, correct]
 
 if __name__ == '__main__':
-
     
     num_iters = int(input("Number of iterations: "))
     a_uppers = np.zeros(num_iters)
@@ -323,6 +322,7 @@ if __name__ == '__main__':
             
     
     for i in range(num_iters):
+        #Follows pattern of P,T,e,a,i,w,Omega
         P_uppers[i] = results[i][0][0]
         T_uppers[i] = results[i][0][1]
         e_uppers[i] = results[i][0][2]
