@@ -4,6 +4,8 @@ from __future__ import print_function, division
 
 # Import the key packages we need:
 import numpy as np
+import scipy as sp
+import scipy.stats
 
 def Thiele_Innes_from_Campbell(w, a, i, Omega):
     '''Given the four Campbell orbital parameters as input:
@@ -973,3 +975,37 @@ def solar2jup(value):
     value = value*M_sun/M_jup
     return value
 
+def mass_distance_prior(mass_mean, mass_sigma, distance_mean, distance_sigma):
+    ''' Fits a prior to the mass/distance^3 relation and returns a function to 
+    be used with an array of input values to obtain prior probabilities of
+    those values.
+    
+    Inputs: Single valued mean mass, standard deviation of mass, mean distance,
+            and standard deviation of distance.
+            
+    Outputs: A function decsribing the prior probability distribution of mass/
+             distance^3.
+    '''
+    n = int(1e6)
+    masses = np.random.normal(mass_mean, mass_sigma, n)
+    distances = np.random.normal(distance_mean, distance_sigma, n)
+    
+    # Only keep distances and masses notably different from zero: 
+    good = np.logical_and(distances > 2*distance_sigma, masses > 0)
+    
+    sample_dist = masses[good]/distances[good]**3
+    
+    # In the event of large sigmas, keep only the positive values:
+    sample_dist = sample_dist[sample_dist > 0]
+        
+    # Fit first with location parameter fixed as zero: 
+    fit_pars_init = scipy.stats.lognorm.fit(sample_dist, floc=0)
+    
+    # Now fit again with all free and previous pars as initial guesses: 
+    fit_pars = scipy.stats.lognorm.fit(sample_dist, fit_pars_init[0], \
+                                loc=fit_pars_init[1], scale=fit_pars_init[2])
+    
+    fit_func = scipy.stats.lognorm(*fit_pars)
+
+    
+    return fit_func.pdf
