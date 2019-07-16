@@ -4,8 +4,14 @@ from __future__ import print_function, division
 
 # Import the key packages we need:
 import numpy as np
+
 import scipy as sp
 import scipy.stats
+
+import matplotlib.pyplot as plt
+# Make default font a bit bigger:
+import matplotlib
+matplotlib.rcParams['font.size'] = 18   # Font size in points
 
 def Thiele_Innes_from_Campbell(w, a, i, Omega):
     '''Given the four Campbell orbital parameters as input:
@@ -1009,3 +1015,198 @@ def mass_distance_prior(mass_mean, mass_sigma, distance_mean, distance_sigma):
 
     
     return fit_func.pdf
+
+def inclination_prior(i_array):
+    ''' Returns a prior for inclination
+    
+    Inputs: An array of inclination values
+            
+    Outputs: An array of the sine of each value
+    '''
+    i_prior = np.sin(i_array)
+    
+    return i_prior
+
+def prior(mass_mean, mass_sigma, distance_mean, distance_sigma, \
+          mass_distance_array, i_array):
+    
+    mass_prior_func = mass_distance_prior(mass_mean, mass_sigma, \
+                                          distance_mean, distance_sigma)
+    
+    mass_prior = mass_prior_func(mass_distance_array)
+    
+    i_prior = inclination_prior(i_array)
+    
+    prior = i_prior*mass_prior
+    
+    norm_prior = prior/np.sum(prior)
+    
+    return norm_prior
+
+def mas2AU(value, d_pc):
+    
+    value = value*d_pc/1000
+    
+    return value
+
+def posterior_graph(likelihood_norm, star_name, param, param_arr, param_mean, \
+                    param_low, param_high, graph_range=None, lit_param=None, \
+                    lit_param_err_low=None, lit_param_err_high=None):
+    '''
+    
+    Inputs: param_arr - Array of potential values for the chosen parameter.
+            param_mean - Mean of potential values for the chosen parameter.
+            param_low - Lower bound of the 68% credible interval for the chosen
+                        parameter.
+            param_high - Upper bound of the 68% credible interval for the 
+                         chosen parameter.
+            param - Parameter to be graphed.
+            likelihood_nrom - Array of likelihoods corresponding to each 
+                              potential value for the chosen parameter.
+            star_name - Name of the object being studied (Assumed to be a star 
+                        in a binary system).
+            graph_range - Default of None graphs a little more than the range
+                          of the credible interval of the input array.
+                          'full' graphs the full range of the array.
+                          Anything else should be a list containing floats of
+                          the lower and upper bounds of the range to be 
+                          graphed.
+            lit_param - Default of None if there is no value for the param in 
+                        literature.
+                        Otherwise the value of the chosen parameter agreed upon
+                        in literature.
+            lit_param_err_low - Default of None if lit_param is None.
+                                 Otherwise the positive low error in the value
+                                 of the chosen parameter agreed upon in 
+                                 literature.
+            lit_param_low_high - Default of None if lit_param is None.
+                                 Otherwise the positive high error in the value
+                                 of the chosen parameter agreed upon in 
+                                 literature.
+                          
+    '''
+    
+    param_err_high = param_high - param_mean
+    param_err_low = param_mean - param_low
+    
+    if graph_range == None:
+        param_range = [0.9*param_low[0], 1.1*param_high[0]]
+    elif graph_range == 'full':
+        param_range = [np.min(param_arr), np.max(param_arr)]
+    else:
+        param_range = graph_range
+    
+    bins = np.linspace(param_range[0], param_range[1],100)
+    plt.figure(figsize=(14,10))  # Units are inches
+    plt.xlim(param_range)
+    
+    bin_vals, bin_edges, patches = plt.hist(np.ravel(param_arr), weights=np.ravel(likelihood_norm), \
+                                            bins=bins, label="Orbit posterior dist.", \
+                                            fill=False, edgecolor='blue', hatch="\\") 
+    
+    if param == 'a':
+        plt.xlabel("Semimajor axis $a$ (AU)")
+    elif param == 'e':
+        plt.xlabel("Eccentricity $e$")
+    elif param == 'i':
+        plt.xlabel("Inclination $i$ (deg)")
+    elif param == 'w':
+        plt.xlabel("Longitude of periastron $ω$ (deg)")
+    elif param == 'Omega':
+        plt.xlabel("Position angle of ascending node $Ω$ (deg)")
+    elif param == 'T':
+        plt.xlabel("Time of periastron passage $T$ (yr)")
+    elif param == 'Mass':
+        plt.xlabel("Stellar mass $M_1 + M_2$ ($M_\odot$)")
+    elif param == 'P':
+        plt.xlabel("Period $P$ (yr)")
+        
+    plt.ylabel("Relative posterior likelihood")
+    
+    plt.errorbar([param_mean], [1.09*np.max(bin_vals)], xerr=[[param_err_low], [param_err_high]],\
+                 yerr=None, fmt='b^', \
+                 label="Orbit 68%% c.i.: $%0.3f^{+%0.3f} _{-%0.3f}$ AU" % \
+                 (param_mean, param_err_high, param_err_low))
+    
+    if lit_param != None: 
+        plt.errorbar([lit_param], [1.06*np.max(bin_vals)], xerr=[[lit_param_err_low], [lit_param_err_high]],\
+                     yerr=None, fmt='gs', \
+                     label="Published 68%% c.i.:  $%0.3f^{+%0.3f} _{-%0.3f}$ mas" % \
+                     (lit_param, lit_param_err_high, lit_param_err_low))
+    
+    
+    star_name_nospace = star_name.replace(" ", "_")
+    plt.title(star_name)
+    plt.legend(fontsize=14, numpoints=1, loc='upper left')
+    
+    if param == 'a':
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "_a_dist.png")
+    elif param == 'e':
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "_e_dist.png")
+    elif param == 'i':
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "_i_dist.png")
+    elif param == 'w':
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "_w_dist.png")
+    elif param == 'Omega':
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "_Omega_dist.png")
+    elif param == 'T':
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "_T_dist.png")
+    elif param == 'Mass':
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "_Mass_dist.png")
+    elif param == 'P':
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "_P_dist.png")
+    
+    plt.show()
+
+def store_parameter_info(param, param_arr, param_mean, param_low, param_high, \
+                         graph_range=None, lit_param=None, \
+                         lit_param_err_low=None, lit_param_err_high=None):
+    
+    param_info = [param, param_arr, param_mean, param_low, param_high]
+    
+    if graph_range != None:
+        param_info.append(graph_range)
+        
+    if lit_param != None:
+        param_info.append(lit_param)
+        #Assume that if there's a lit_param, there is a high and low error
+        param_info.append(lit_param_err_high)
+        param_info.append(lit_param_err_low)
+    
+    return param_info
+
+def loop_posteriors(likelihood_norm, star_name, param_info):
+    
+    for i in range(len(param_info)):
+        param = param_info[i][0]
+        param_arr = param_info[i][1]
+        param_mean = param_info[i][2]
+        param_low = param_info[i][3]
+        param_high = param_info[i][4]
+        
+        if len(param_info[i]) == 5:
+            posterior_graph(likelihood_norm, star_name, param, param_arr, \
+                            param_mean, param_low, param_high)
+            
+        elif len(param_info[i]) == 6:
+            graph_range = param_info[i][5]
+            posterior_graph(likelihood_norm, star_name, param, param_arr, \
+                            param_mean, param_low, param_high, graph_range)
+            
+        elif len(param_info[i]) == 8:
+            lit_param = param_info[i][5]
+            lit_param_err_high = param_info[i][6]
+            lit_param_err_low = param_info[i][7]
+            posterior_graph(likelihood_norm, star_name, param, param_arr, \
+                            param_mean, param_low, param_high, \
+                            lit_param=lit_param, lit_param_err_low=lit_param_err_low, \
+                            lit_param_err_high=lit_param_err_high)
+            
+        elif len(param_info[i]) == 9:
+            graph_range = param_info[i][5]
+            lit_param = param_info[i][6]
+            lit_param_err_high = param_info[i][7]
+            lit_param_err_low = param_info[i][8]
+            posterior_graph(likelihood_norm, star_name, param, param_arr, \
+                            param_mean, param_low, param_high, graph_range, \
+                            lit_param, lit_param_err_low, lit_param_err_high)
