@@ -1023,28 +1023,58 @@ def inclination_prior(i_array):
             
     Outputs: An array of the sine of each value
     '''
-    i_prior = np.sin(i_array)
+    i_prior = abs(np.sin(i_array))
     
     return i_prior
 
 def prior(mass_mean, mass_sigma, distance_mean, distance_sigma, \
-          mass_distance_array, i_array):
+          mass_distance_array, i_array, a_array):
+    '''Returns an overall normalised prior factoring in mass, distance, 
+       inclination, and semimajor axis. Makes use of mass_prior_func which fits
+       a probability distribution to a set mean and standard deviation in mass 
+       and distance. Sets a log(a) prior for the semi-major axis described by 
+       1/a. Sets a sinusoidal prior on inclination described by sin(i).
     
+    Inputs: mass_mean - Single valued mean mass of the objects.
+            mass_sigma - Single valued standard deviation in mass of the 
+                         objects.
+            distance_mean - Single valued mean distance to the objects.
+            distance_sigma - Single valued standard deviation in distance to 
+                             the objects.
+            mass_distance_array - An array of mass/distance**3, a**3/P**2 may 
+                                  also be used.
+            i_array - An array of inclinations.
+            a_array - An array of semi-major axes.
+    
+    Outputs: A normalised prior factoring in known priors on mass, distance,
+             inclination, and semi-major axis.
+    '''
     mass_prior_func = mass_distance_prior(mass_mean, mass_sigma, \
                                           distance_mean, distance_sigma)
     
     mass_prior = mass_prior_func(mass_distance_array)
     
     i_prior = inclination_prior(i_array)
+    print(np.min(i_prior))
     
-    prior = i_prior*mass_prior
+    a_prior = 1/a_array
+    
+    prior = i_prior*mass_prior*a_prior
     
     norm_prior = prior/np.sum(prior)
     
     return norm_prior
 
 def mas2AU(value, d_pc):
+    '''Converts milliarcseconds to AU for easier comparision with values in the
+       literature.
     
+    Inputs: value - A distance or array of distances (usually semi-major axis) 
+                    in milliarcseconds.
+            d_pc - Distance to the system in parsecs.
+    
+    Outputs: The value in AU.
+    '''
     value = value*d_pc/1000
     
     return value
@@ -1054,17 +1084,17 @@ def posterior_graph(likelihood_norm, star_name, param, param_arr, param_mean, \
                     lit_param_err_low=None, lit_param_err_high=None):
     '''
     
-    Inputs: param_arr - Array of potential values for the chosen parameter.
+    Inputs: likelihood_norm - Array of likelihoods corresponding to each 
+                              potential value for the chosen parameter.
+            star_name - Name of the object being studied (Assumed to be a star 
+                        in a binary system).
+            param - Parameter to be graphed.
+            param_arr - Array of potential values for the chosen parameter.
             param_mean - Mean of potential values for the chosen parameter.
             param_low - Lower bound of the 68% credible interval for the chosen
                         parameter.
             param_high - Upper bound of the 68% credible interval for the 
                          chosen parameter.
-            param - Parameter to be graphed.
-            likelihood_nrom - Array of likelihoods corresponding to each 
-                              potential value for the chosen parameter.
-            star_name - Name of the object being studied (Assumed to be a star 
-                        in a binary system).
             graph_range - Default of None graphs a little more than the range
                           of the credible interval of the input array.
                           'full' graphs the full range of the array.
@@ -1161,7 +1191,41 @@ def posterior_graph(likelihood_norm, star_name, param, param_arr, param_mean, \
 def store_parameter_info(param, param_arr, param_mean, param_low, param_high, \
                          graph_range=None, lit_param=None, \
                          lit_param_err_low=None, lit_param_err_high=None):
+    '''Stores information about a specified orbital parameter in a format that 
+       is expected by loop_posteriors. Takes into account that you may need to
+       store 5, 6, 8, or 9 parameters. Assumes that if you need to store the
+       accepted literature value, then you also need to store the low and high
+       errors in the value.
     
+    Inputs: param - Parameter to be graphed.
+            param_arr - Array of potential values for the chosen parameter.
+            param_mean - Mean of potential values for the chosen parameter.
+            param_low - Lower bound of the 68% credible interval for the chosen
+                        parameter.
+            param_high - Upper bound of the 68% credible interval for the 
+                         chosen parameter.
+            graph_range - Default of None graphs a little more than the range
+                          of the credible interval of the input array.
+                          'full' graphs the full range of the array.
+                          Anything else should be a list containing floats of
+                          the lower and upper bounds of the range to be 
+                          graphed.
+            lit_param - Default of None if there is no value for the param in 
+                        literature.
+                        Otherwise the value of the chosen parameter agreed upon
+                        in literature.
+            lit_param_err_low - Default of None if lit_param is None.
+                                 Otherwise the positive low error in the value
+                                 of the chosen parameter agreed upon in 
+                                 literature.
+            lit_param_low_high - Default of None if lit_param is None.
+                                 Otherwise the positive high error in the value
+                                 of the chosen parameter agreed upon in 
+                                 literature.
+    
+    Outputs: Returns a list with the inputs in a specific order varying in
+             length depending on input
+    '''
     param_info = [param, param_arr, param_mean, param_low, param_high]
     
     if graph_range != None:
@@ -1170,13 +1234,26 @@ def store_parameter_info(param, param_arr, param_mean, param_low, param_high, \
     if lit_param != None:
         param_info.append(lit_param)
         #Assume that if there's a lit_param, there is a high and low error
-        param_info.append(lit_param_err_high)
         param_info.append(lit_param_err_low)
+        param_info.append(lit_param_err_high)
     
     return param_info
 
 def loop_posteriors(likelihood_norm, star_name, param_info):
+    ''' Loops through different parameters in a list of lists in param_info 
+        then prints and saves each posterior graph. Depending on the length of
+        the list, the posterior is graphed with different secified variables.
     
+    Inputs: likelihood_norm - Array of likelihoods corresponding to each 
+                              potential value for the chosen parameter.
+            star_name - Name of the object being studied (Assumed to be a star 
+                        in a binary system).
+            param_info - A list of lists where each element describes the 
+                         information of a given parameter in the format 
+                         described in store_parameter_info.
+        
+    Outputs: None
+    '''
     for i in range(len(param_info)):
         param = param_info[i][0]
         param_arr = param_info[i][1]
@@ -1195,8 +1272,8 @@ def loop_posteriors(likelihood_norm, star_name, param_info):
             
         elif len(param_info[i]) == 8:
             lit_param = param_info[i][5]
-            lit_param_err_high = param_info[i][6]
-            lit_param_err_low = param_info[i][7]
+            lit_param_err_low = param_info[i][6]
+            lit_param_err_high = param_info[i][7]
             posterior_graph(likelihood_norm, star_name, param, param_arr, \
                             param_mean, param_low, param_high, \
                             lit_param=lit_param, lit_param_err_low=lit_param_err_low, \
@@ -1205,8 +1282,8 @@ def loop_posteriors(likelihood_norm, star_name, param_info):
         elif len(param_info[i]) == 9:
             graph_range = param_info[i][5]
             lit_param = param_info[i][6]
-            lit_param_err_high = param_info[i][7]
-            lit_param_err_low = param_info[i][8]
+            lit_param_err_low = param_info[i][7]
+            lit_param_err_high = param_info[i][8]
             posterior_graph(likelihood_norm, star_name, param, param_arr, \
                             param_mean, param_low, param_high, graph_range, \
                             lit_param, lit_param_err_low, lit_param_err_high)
