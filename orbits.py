@@ -1055,7 +1055,6 @@ def prior(mass_mean, mass_sigma, distance_mean, distance_sigma, \
     mass_prior = mass_prior_func(mass_distance_array)
     
     i_prior = inclination_prior(i_array)
-    print(np.min(i_prior))
     
     a_prior = 1/a_array
     
