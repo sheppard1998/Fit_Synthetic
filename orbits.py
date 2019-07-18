@@ -13,16 +13,22 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.rcParams['font.size'] = 18   # Font size in points
 
-def Thiele_Innes_from_Campbell(w, a, i, Omega):
+def Thiele_Innes_from_Campbell(w, a, i, Omega, rv=None, parallax=None):
     '''Given the four Campbell orbital parameters as input:
     w(little omega): argument of periastron, radians
     a: semimajor axis
     i: orbital inclination, radians
     Omega: longitude of ascending node, radians
     
-    as input, calculate and return the four Thiele-Innes parameters
+    calculate and return the four Thiele-Innes parameters
     A, B, F, and G. These will be returned with the same units as a.
-    Inputs can be either scalars or numpy arrays.'''
+    Inputs can be either scalars or numpy arrays.
+    
+    Optional inputs to calculate raial velocity Thiele-Innes parameters:
+    rv: default None, if not None then it is used to specify that you want
+        radial velocity Thiele_Innes elements too
+    parallax: parallax, must have same units as a and must both be an angle
+    '''
     
     from numpy import cos,sin
     
@@ -33,14 +39,24 @@ def Thiele_Innes_from_Campbell(w, a, i, Omega):
     cos_Omega = cos(Omega)
     sin_Omega = sin(Omega)
     cos_i = cos(i)
+    sin_i = sin(i)
     
     A = a * (cos_w*cos_Omega - sin_w*sin_Omega*cos_i)
     B = a * (cos_w*sin_Omega + sin_w*cos_Omega*cos_i)
     F = a * (-sin_w*cos_Omega - cos_w*sin_Omega*cos_i)
     G = a * (-sin_w*sin_Omega + cos_w*cos_Omega*cos_i)
     
-    return A, B, F, G
-
+    if rv == None:
+        return A, B, F, G
+    
+    else:
+        #Catanzarite 2010
+        a_reflex = a/parallax
+        #Assumes that if rv is not None, neither is parallax
+        C = -a_reflex*sin_w*sin_i
+        H = -a_reflex*cos_w*sin_i
+        
+        return A, B, F, G, C, H
 
 
 def getE_parallel(M, e):
@@ -351,7 +367,8 @@ def rho_PA_to_RA_Dec(rho, PA, rho_errs, PA_errs):
     return RA, Dec, RA_errs, Dec_errs
 
 
-def keplerian_xy_Campbell(times, w, a, i, T, e, P, Omega):
+def keplerian_xy_Campbell(times, w, a, i, T, e, P, Omega, rv=None, \
+                          parallax=None, two_velocities=False):
     '''For the input array of times (assumed in same units as period P, typically
     years), and orbital elements (all scalars):
     w: argument of periastron (radians)
@@ -369,12 +386,33 @@ def keplerian_xy_Campbell(times, w, a, i, T, e, P, Omega):
     so if plotting these in an x-y plot, use plt.gca().invert_xaxis()
     to have RA increase toward the left. '''
 
-    A, B, F, G = Thiele_Innes_from_Campbell(w, a, i, Omega)
+    if rv == None:
+        A, B, F, G = Thiele_Innes_from_Campbell(w, a, i, Omega)
+        
+        return keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P)
     
-    return keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P)
+    elif two_velocities == False:
+        A, B, F, G, C, H = Thiele_Innes_from_Campbell(w, a, i, Omega, rv, \
+                                                      parallax)
+        
+        return keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, rv, C, H)
+    
+    else:
+        A, B, F, G, C, H = Thiele_Innes_from_Campbell(w, a, i, Omega, rv, \
+                                                      parallax)
+        
+        y, x, v1 = keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, rv, \
+                                             C, H)
+        
+        #Two velocities due to astrometric data being consistent with w and 
+        #w + pi
+        v2 = -v1
+        
+        return y, x, v1, v2
 
 
-def keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P):
+def keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, rv=None, C=None, \
+                              H=None):
     '''For the input array of times (assumed in same units as period P, typically
     years), the four Thiele-Innes elements A, B, F, and G; and orbital elements (all scalars):
     T: time of periastron passage (same units as P);
@@ -400,7 +438,16 @@ def keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P):
     
     # This x,y coordinate system isn't RA/Dec.  Rather, positive
     # x axis is north, so swap to return in RA, Dec order: 
-    return y, x
+    if rv == None:
+        return y, x
+    
+    else:
+        muu = 2*np.pi/P
+        VX = -np.sin(E)/(1 - e*np.cos(E))
+        VY = np.sqrt(1 - e**2)*np.cos(E)/(1 - e*np.cos(E))
+        v = muu*(C*VX + H*VY)
+        
+        return y, x, v
 
 # Now create a function to find the least-squares solution for orbital elements
 # given set values of P, e, and T.  Follows the prescription of Lucy et al. 2014,
@@ -1063,20 +1110,6 @@ def prior(mass_mean, mass_sigma, distance_mean, distance_sigma, \
     norm_prior = prior/np.sum(prior)
     
     return norm_prior
-
-def mas2AU(value, d_pc):
-    '''Converts milliarcseconds to AU for easier comparision with values in the
-       literature.
-    
-    Inputs: value - A distance or array of distances (usually semi-major axis) 
-                    in milliarcseconds.
-            d_pc - Distance to the system in parsecs.
-    
-    Outputs: The value in AU.
-    '''
-    value = value*d_pc/1000
-    
-    return value
 
 def posterior_graph(likelihood_norm, star_name, param, param_arr, param_mean, \
                     param_low, param_high, graph_range=None, lit_param=None, \
