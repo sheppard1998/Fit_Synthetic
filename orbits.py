@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.rcParams['font.size'] = 18   # Font size in points
 
-def Thiele_Innes_from_Campbell(w, a, i, Omega, rv=None, parallax=None):
+def Thiele_Innes_from_Campbell(w, a, i, Omega, parallax=None):
     '''Given the four Campbell orbital parameters as input:
     w(little omega): argument of periastron, radians
     a: semimajor axis
@@ -21,10 +21,10 @@ def Thiele_Innes_from_Campbell(w, a, i, Omega, rv=None, parallax=None):
     Omega: longitude of ascending node, radians
     
     calculate and return the four Thiele-Innes parameters
-    A, B, F, and G. These will be returned with the same units as a.
+    A, B, F, and G--or six including C and H. These will be returned with the same units as a.
     Inputs can be either scalars or numpy arrays.
     
-    Optional inputs to calculate raial velocity Thiele-Innes parameters:
+    Optional inputs to calculate radial velocity Thiele-Innes parameters:
     rv: default None, if not None then it is used to specify that you want
         radial velocity Thiele_Innes elements too
     parallax: parallax, must have same units as a and must both be an angle
@@ -46,13 +46,13 @@ def Thiele_Innes_from_Campbell(w, a, i, Omega, rv=None, parallax=None):
     F = a * (-sin_w*cos_Omega - cos_w*sin_Omega*cos_i)
     G = a * (-sin_w*sin_Omega + cos_w*cos_Omega*cos_i)
     
-    if rv == None:
+    if parallax == None:
         return A, B, F, G
     
     else:
         #Catanzarite 2010
         a_reflex = a/parallax
-        #Assumes that if rv is not None, neither is parallax
+        
         C = -a_reflex*sin_w*sin_i
         H = -a_reflex*cos_w*sin_i
         
@@ -367,8 +367,8 @@ def rho_PA_to_RA_Dec(rho, PA, rho_errs, PA_errs):
     return RA, Dec, RA_errs, Dec_errs
 
 
-def keplerian_xy_Campbell(times, w, a, i, T, e, P, Omega, rv=None, \
-                          parallax=None, two_velocities=False):
+def keplerian_xy_Campbell(times, w, a, i, T, e, P, Omega, parallax=None, \
+                          two_velocities=False):
     '''For the input array of times (assumed in same units as period P, typically
     years), and orbital elements (all scalars):
     w: argument of periastron (radians)
@@ -386,23 +386,20 @@ def keplerian_xy_Campbell(times, w, a, i, T, e, P, Omega, rv=None, \
     so if plotting these in an x-y plot, use plt.gca().invert_xaxis()
     to have RA increase toward the left. '''
 
-    if rv == None:
+    if parallax == None:
         A, B, F, G = Thiele_Innes_from_Campbell(w, a, i, Omega)
         
         return keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P)
     
     elif two_velocities == False:
-        A, B, F, G, C, H = Thiele_Innes_from_Campbell(w, a, i, Omega, rv, \
-                                                      parallax)
+        A, B, F, G, C, H = Thiele_Innes_from_Campbell(w, a, i, Omega, parallax)
         
-        return keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, rv, C, H)
+        return keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, C, H)
     
     else:
-        A, B, F, G, C, H = Thiele_Innes_from_Campbell(w, a, i, Omega, rv, \
-                                                      parallax)
+        A, B, F, G, C, H = Thiele_Innes_from_Campbell(w, a, i, Omega, parallax)
         
-        y, x, v1 = keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, rv, \
-                                             C, H)
+        y, x, v1 = keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, C, H)
         
         #Two velocities due to astrometric data being consistent with w and 
         #w + pi
@@ -411,8 +408,7 @@ def keplerian_xy_Campbell(times, w, a, i, T, e, P, Omega, rv=None, \
         return y, x, v1, v2
 
 
-def keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, rv=None, C=None, \
-                              H=None):
+def keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, C=None, H=None):
     '''For the input array of times (assumed in same units as period P, typically
     years), the four Thiele-Innes elements A, B, F, and G; and orbital elements (all scalars):
     T: time of periastron passage (same units as P);
@@ -438,7 +434,7 @@ def keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, rv=None, C=None, \
     
     # This x,y coordinate system isn't RA/Dec.  Rather, positive
     # x axis is north, so swap to return in RA, Dec order: 
-    if rv == None:
+    if C == None:
         return y, x
     
     else:
@@ -453,29 +449,31 @@ def keplerian_xy_Thiele_Innes(times, A, B, F, G, T, e, P, rv=None, C=None, \
 # given set values of P, e, and T.  Follows the prescription of Lucy et al. 2014,
 # A&A 563 A126
 
-def Thiele_Innes_optimal(times_in, P_in, e_in, T_in, x_in, y_in, \
-                         x_errs=None, y_errs=None, debug=False):
+def Thiele_Innes_optimal(times_in, P_in, e_in, T_in, x_in, y_in, v_in=None, \
+                         x_errs=None, y_errs=None, v_errs=None, debug=False):
     '''Given an input array of times, and values of period P, 
     eccentricity e, and time of periastron T, and a set of 
-    x, y positions on the sky at those times, find the least-squares
+    x, y positions on the sky at those times (and optionally a set of v 
+    velocities on the sky at those times), find the least-squares
     solution that optimizes the fit of the orbit to the data.
     
-    Here x and y are Dec and RA, respectively, following the typical 
-    convention.  Optionally, errors on x and y can be specified, in the 
-    same units as x and y, and the positions will be weighted accordingly in the 
-    least-squares calculation, by 1/err**2 .
+    Here x and y are Dec and RA (and v is radial velocity), respectively, 
+    following the typical convention.  Optionally, errors on x and y (and v) 
+    can be specified, in the same units as x and y (and v), and the positions 
+    (and velocities) will be weighted accordingly in the least-squares 
+    calculation, by 1/err**2 .
 
-    Each of the arrays x_in, y_in, and times_in is assumed to be
+    Each of the arrays x_in, y_in (and v_in), and times_in is assumed to be
     1-dimensional.  P_in, e_in, and T_in can be 1D or multi-D. 
 
-    Returns arrays A, B, F, G, and chi-squared, as well as a list
+    Returns arrays A, B, F, G (and C, H), and chi-squared, as well as a list
     containing the arrays of variances and covariances of A, B, F, and
-    G.  The first four (A, B, F, G) are
+    G (and C, H).  The first four (A, B, F, G)--or six (A, B, F, G, C, H)--are
     the Thiele-Innes best-fit elements at each of the input sets of P,
     e, and T; and the latter is an array of the chi-squared values for
     each of those fits.  The best fit overall can be found from
     finding the array element with the minimum chi-squared, and
-    extracting the corresponding elements of A, B, F, and G (along
+    extracting the corresponding elements of A, B, F, and G--and C, H--(along
     with P, e, and T).
 
     This follows the method of L. Lucy, "Mass estimates for visual
@@ -492,6 +490,12 @@ def Thiele_Innes_optimal(times_in, P_in, e_in, T_in, x_in, y_in, \
         y_weights = 1. / y_errs**2
     else:
         y_weights = 1.
+    
+    if v_in is not None:
+        if v_errs is not None:
+            v_weights = 1. / v_errs**2
+        else:
+            v_weights = 1.
         
         
     # Now we will always have multiple times we are fitting, but 
@@ -522,6 +526,9 @@ def Thiele_Innes_optimal(times_in, P_in, e_in, T_in, x_in, y_in, \
         times = times_in
         x = x_in
         y = y_in
+        if v_in is not None:
+            v = v_in
+        
     else:
         is_array = True
         n_orb_elements = P_in.size
@@ -551,6 +558,8 @@ def Thiele_Innes_optimal(times_in, P_in, e_in, T_in, x_in, y_in, \
         times = np.broadcast_to(np.array(times_in, ndmin=P_ndim+1).transpose(), new_shape)
         x = np.broadcast_to(np.array(x_in, ndmin=P_ndim+1).transpose(), new_shape)
         y = np.broadcast_to(np.array(y_in, ndmin=P_ndim+1).transpose(), new_shape)
+        if v_in is not None:
+            v = np.broadcast_to(np.array(v_in, ndmin=P_ndim+1).transpose(), new_shape)
         
         # Weights may need to be reshaped if they aren't just a single value:
         if not np.isscalar(x_weights):
@@ -559,6 +568,10 @@ def Thiele_Innes_optimal(times_in, P_in, e_in, T_in, x_in, y_in, \
         if not np.isscalar(y_weights):
             assert y_weights.size == n_times, 'Must have same number of y weights as data points if not scalar.'
             y_weights = np.broadcast_to(np.array(y_weights, ndmin=P_ndim+1).transpose(), new_shape)
+        if v_in is not None:
+            if not np.isscalar(v_weights):
+                assert v_weights.size == n_times, 'Must have same number of v weights as data points if not scalar.'
+                v_weights = np.broadcast_to(np.array(v_weights, ndmin=P_ndim+1).transpose(), new_shape)
         
     
     if debug:
@@ -570,21 +583,29 @@ def Thiele_Innes_optimal(times_in, P_in, e_in, T_in, x_in, y_in, \
         print("Size of times array is %d." % times.size)
         print("Min and max are %0.2f and %0.2f." % (np.min(times), np.max(times)))
 
-    # Calculate the "mean anomaly" M:
+    # Calculate the "mean anomaly" M and muu:
     M = (2*np.pi/P) * (times - T)
+    if v_in is not None:
+        muu = 2*np.pi/P
     #M = M - np.floor(M/(2.*np.pi))*2*np.pi
     # Then the eccentric anomaly:
     E = getE_parallel(M,e)
     # Eqs. A.3
     X = np.cos(E) - e
     Y = np.sin(E) * np.sqrt(1 - e**2)
+    
+    if v_in is not None:
+        # X, Y derivatives from Catanzarite 2010 pg. 8
+        X_deriv = -muu * np.sin(E) / (1 - e * np.cos(E))
+        Y_deriv = np.sqrt(1 - e**2) * muu * np.cos(E) / (1 - e * np.cos(E))
 
     if debug:
         print("Size of E array is %d." % E.size)
         print("Min and max are %0.2f and %0.2f." % (np.min(E), np.max(E)))
 
     # Now do the calculations that lead to the optimal A, B, F, and G
-    # values, section A.2 of Lucy 2014A. 
+    # values,
+    #section A.2 of Lucy 2014A. 
 
     # In calculating the chi-squared and the uncertainties on
     # parameters, there is a leading "sigma" variable on the
@@ -644,27 +665,64 @@ def Thiele_Innes_optimal(times_in, P_in, e_in, T_in, x_in, y_in, \
     sigma_G = np.sqrt((a/Delta)* sigma**2)
     cov_BG = (-c/Delta) * sigma**2
     
-
+    if v_in is not None:
+        # Above quantities A and F depend on the x values 
+        # and their weights, and the quantities B and G 
+        # depend on the y values and their weights, while
+        # the quantities C and H depend on the v values 
+        # and their weights, so recalculate a, b, c and 
+        # Delta using the v_weights:
+        
+        a = np.sum(v_weights*X_deriv**2, axis=0)
+        b = np.sum(v_weights*Y_deriv**2, axis=0)  
+        c = np.sum(v_weights*X_deriv*Y_deriv, axis=0)
+        Delta = a*b - c**2
+        r_31 = np.sum(v_weights*v*X_deriv, axis=0)
+        r_32 = np.sum(v_weights*v*Y_deriv, axis=0)
+    
+        # analogous to Eq. A.7:
+        C = ( b*r_31 - c*r_32)/Delta
+        H = (-c*r_31 + a*r_32)/Delta
+    
+        # Calculate the variance and covariance of C and H:
+        sigma_C = np.sqrt((b/Delta)* sigma**2)
+        sigma_H = np.sqrt((a/Delta)* sigma**2)
+        cov_CH = (-c/Delta) * sigma**2
+        
+        v_fit = C*X_deriv + H*Y_deriv
+    
     # Calculate and return the chi-squared value for 
     # this orbit (Eq. A.2):
     x_fit = A*X + F*Y
     y_fit = B*X + G*Y
-    
+
     if debug:
         print("Size of A array is %d." % A.size)
         print("Size of X array is %d." % X.size)
         print("Size of x_fit array is %d." % x_fit.size)
 
 
-    
-    chi_squared = (1/sigma**2) * (np.sum(x_weights*(x_fit - x)**2, axis=0) + \
-                                  np.sum(y_weights*(y_fit - y)**2, axis=0))
+    if v_in is not None:
+        chi_squared = (1/sigma**2) * (np.sum(x_weights*(x_fit - x)**2, axis=0) + \
+                                      np.sum(y_weights*(y_fit - y)**2, axis=0) + \
+                                      np.sum(v_weights*(v_fit - v)**2, axis=0))
+        
+        # Put all the uncertainty terms into a list so it's a little
+        # easier to pass back: 
+        sigma_list = [sigma_A, sigma_B, sigma_F, sigma_G, sigma_C, sigma_H, \
+                      cov_AF, cov_BG, cov_CH]
+        
+        return A, B, F, G, C, H, sigma_list, chi_squared
+        
+    else:
+        chi_squared = (1/sigma**2) * (np.sum(x_weights*(x_fit - x)**2, axis=0) + \
+                                      np.sum(y_weights*(y_fit - y)**2, axis=0))
 
-    # Put all the uncertainty terms into a list so it's a little
-    # easier to pass back: 
-    sigma_list = [sigma_A, sigma_B, sigma_F, sigma_G, cov_AF, cov_BG]
+        # Put all the uncertainty terms into a list so it's a little
+        # easier to pass back: 
+        sigma_list = [sigma_A, sigma_B, sigma_F, sigma_G, cov_AF, cov_BG]
                                   
-    return A, B, F, G, sigma_list, chi_squared
+        return A, B, F, G, sigma_list, chi_squared
 
 
 def grid_P_e_T(n, logP_min, logP_max, e_min=0, e_max=0.99, tau_min=0, tau_max=0.99, T_start=0):
