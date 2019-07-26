@@ -762,8 +762,9 @@ def grid_P_e_T(n, logP_min, logP_max, e_min=0, e_max=0.99, tau_min=0, tau_max=0.
     return P_array, e_array, T_array
 
 
-def best_fit_orbit(times_obs, x_obs, y_obs, x_errs, y_errs, logP_min=1, logP_max=4, \
-                   e_min=0, e_max=0.99, n=100, refine_grid=False, verbose=True):
+def best_fit_orbit(times_obs, x_obs, y_obs, x_errs, y_errs, v_obs=None, \
+                   v_errs=None, logP_min=1, logP_max=4, e_min=0, e_max=0.99, \
+                   n=100, refine_grid=False, verbose=True):
     '''Given the input x, y, and time positions, and uncertainties on x and y, find 
     the best-fit orbit in the range of logP (years) and eccentricity values given. 
     If refine_grid=True, do a second fitting pass where the search boundaries are 
@@ -780,10 +781,16 @@ def best_fit_orbit(times_obs, x_obs, y_obs, x_errs, y_errs, logP_min=1, logP_max
     P_array, e_array, T_array = grid_P_e_T(n, logP_min, logP_max, e_min, \
                                            e_max, T_start=np.min(times_obs))
 
-    A_array, B_array, F_array, G_array, sigma_list, chi_squared = Thiele_Innes_optimal(times_obs, P_array, e_array, \
-                                                                  T_array, x_obs, y_obs, \
-                                                                  x_errs, y_errs, debug=False)
-
+    if v_obs is None:
+        A_array, B_array, F_array, G_array, sigma_list, chi_squared = Thiele_Innes_optimal(times_obs, \
+                                                                      P_array, e_array, T_array, x_obs, \
+                                                                      y_obs, x_errs, y_errs, debug=False)
+    else:
+        A_array, B_array, F_array, G_array, C_array, \
+        H_array, sigma_list, chi_squared = Thiele_Innes_optimal(times_obs, P_array, e_array, T_array, \
+                                                                x_obs, y_obs, v_obs, x_errs, y_errs, \
+                                                                v_errs, debug=False)
+    
     w_array, a_array, i_array, Omega_array = Campbell_from_Thiele_Innes(A_array, B_array, F_array, G_array)
     end_time = Time.time()
     reduced_chi_squared = chi_squared/(times_obs.size - 3)
@@ -828,11 +835,16 @@ def best_fit_orbit(times_obs, x_obs, y_obs, x_errs, y_errs, logP_min=1, logP_max
         new_tau_max = np.max((T_array[ok] - data_start)/P_array[ok])
         # Just call the same routine again to make new grid and do new fit, but 
         # *don't* set refine_grid to True this time, so we don't loop endlessly:
-        w, a, i, T, e, P, Omega, min_chi = best_fit_orbit(times_obs, x_obs, y_obs, x_errs, y_errs, \
-                                                          np.log10(new_P_min), np.log10(new_P_max), 
-                                                          new_e_min, new_e_max, refine_grid=False, n=n, \
-                                                          verbose=verbose)
-        
+        if v_obs is None:
+            w, a, i, T, e, P, Omega, min_chi = best_fit_orbit(times_obs, x_obs, y_obs, x_errs, y_errs, \
+                                                              np.log10(new_P_min), np.log10(new_P_max), 
+                                                              new_e_min, new_e_max, refine_grid=False, n=n, \
+                                                              verbose=verbose)
+        else:
+            w, a, i, T, e, P, Omega, min_chi = best_fit_orbit(times_obs, x_obs, y_obs, x_errs, y_errs, \
+                                                              v_obs, v_errs, np.log10(new_P_min), np.log10(new_P_max), 
+                                                              new_e_min, new_e_max, refine_grid=False, n=n, \
+                                                              verbose=verbose)
         
     return w, a, i, T, e, P, Omega, min_chi
 
@@ -1377,3 +1389,11 @@ def loop_posteriors(likelihood_norm, star_name, param_info):
             posterior_graph(likelihood_norm, star_name, param, param_arr, \
                             param_mean, param_low, param_high, graph_range, \
                             lit_param, lit_param_err_low, lit_param_err_high)
+
+def AUyr2Kms(velocity):
+    
+    return velocity * 1.496e8/(365.256*24*60*60)
+
+def kms2AUyr(velocity):
+    
+    return velocity * (365.256*24*60*60)/1.496e8

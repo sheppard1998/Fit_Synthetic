@@ -208,7 +208,7 @@ def main():
         # *all* the orbits it tries, and their chi-squares: 
         A_array, B_array, F_array, G_array, sigma_list, chi_squared = orbits.Thiele_Innes_optimal(times_obs, P_array, e_array, \
                                                                                       T_array, x_obs, y_obs, \
-                                                                                      x_errs, y_errs, debug=False)
+                                                                                      x_errs=x_errs, y_errs=y_errs, debug=False)
     
         # Now optimize the grid a bit - only keep values within the bounds that give 
         # delta chi squared less than 10 from the best fit found so far: 
@@ -231,7 +231,7 @@ def main():
                                                       tau_min, tau_max, T_start=data_start)
         A_array, B_array, F_array, G_array, sigma_list, chi_squared = orbits.Thiele_Innes_optimal(times_obs, P_array, e_array, \
                                                                                       T_array, x_obs, y_obs, \
-                                                                                      x_errs, y_errs, debug=False)
+                                                                                      x_errs=x_errs, y_errs=y_errs, debug=False)
     
         # Then take these and get the other orbital parameters, too: 
         w_array, a_array, i_array, Omega_array = orbits.Campbell_from_Thiele_Innes(A_array, B_array, F_array, G_array)
