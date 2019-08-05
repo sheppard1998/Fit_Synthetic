@@ -199,122 +199,55 @@ def Campbell_from_Thiele_Innes(A, B, F, G):
     return the values of the Campbell elements w, a, i, and Omega, 
     with the angles in radians and semimajor axis a in the same
     units as the input parameters.
-    
+     
     Inputs can be either all numpy arrays of the same dimensions, or
     all scalars.'''
-    
+     
     import numpy as np
-
-    # Whether to print some additional debug information
-    # and do some assertion testing:
-    debug = True
-    
+ 
     w_plus_Omega = np.arctan2((B-F),(A+G))
     w_minus_Omega = np.arctan2((-B-F),(A-G))
-#    w_plus_Omega = np.arctan((B-F)/(A+G))
-#    w_minus_Omega = np.arctan((-B-F)/(A-G))
-
-    if debug:
-        # Check that the above arctan2 function returns values that
-        # meet the proper conditions about quadrant of these
-        # variables:
-        sign_B_minus_F = (B-F > 0)
-        sign_minus_B_minus_F = (-B-F > 0)
-        sign_sin_w_plus_Omega = (np.sin(w_plus_Omega) > 0)
-        sign_sin_w_minus_Omega = (np.sin(w_minus_Omega) > 0)
-
-        assert np.array_equal(sign_B_minus_F, sign_sin_w_plus_Omega), \
-          "Not all B_minus_F same sign as all sin(w + Omega)"
-        assert np.array_equal(sign_minus_B_minus_F, sign_sin_w_minus_Omega), \
-          "Not all -B-F same sign as all sin(w - Omega)"
-        
+ 
     w = 0.5 * (w_plus_Omega + w_minus_Omega)
     Omega = 0.5 * (w_plus_Omega - w_minus_Omega)
-
-    # Because of the range of the arctan2 function (from -pi to pi),
-    # after taking the sums and differences we could end up with
-    # values of these from -2pi to 2pi.  Wrap the negative ones into
-    # the positive range:
-    w_neg = w < 0
-    w[w_neg] += 2. * np.pi
-
-    Omega_neg = Omega < 0
-    Omega[Omega_neg] += 2. * np.pi
-    
-    
-    #!!!  Need to update comments below. 
-    
-    # Return only values in the range 0, pi for Omega, and
-    # w (little omega).  Note that this is slightly different 
-    # from what is given in Lucy 2014 (Eqs. A.11, A.12 and following
-    # text) where he restricts these to the range of 0 to pi.
-    # We adopt 0 to 2 pi here since that is the full range allowed in
-    # the definition of these parameters, even if visual orbits alone
-    # don't allow us to determine which side of pi is the right
-    # value.  Choosing this convention allows more straightforward
-    # comparison with other orbital fitting methods (e.g. MCMC).
-
-    
+     
+    # Return only values in the range 0, pi for Omega.
     # To do this we need to handle it differently for arrays
     # vs. scalars: 
-    
+     
     is_array = hasattr(A, "__len__")
-    
+     
     if is_array:
-        # Per discussions in L14 Eqs. A.11 and A.12, if Omega is out
-        # of the range 0 to pi, we shift it, and change values of w
-        # accordingly so that the sums and differences of Omega and w
-        # are preserved:
-        
         neg = Omega < 0
-        Omega[neg] +=  np.pi
-        w[neg] +=  np.pi
-
-        # Now deal with the too-large values: 
-        big = Omega >= np.pi
-        Omega[big] -=  np.pi
-        w[big] -=  np.pi
-
-        # Now having done this, we might have pushed
-        # w out of the 0 to 2 pi range in some cases, so we need to
-        # address that possibility:
-
-        neg_w = w < 0
-        w[neg_w] += 2. * np.pi
-
-        big_w = w >= 2. * np.pi
-        w[big_w] -= 2. * np.pi
-
-        
-
+        big = Omega > np.pi
+     
+        Omega[neg] += np.pi
+        w[neg]     += np.pi
+     
+        Omega[big] -= np.pi
+        w[big]     -= np.pi
+         
+        # Wrapping negative values of w to 2pi
+        neg = w <0
+        w[neg]     += np.pi*2
     else:
         # Only have scalars, no indexing:
         if Omega < 0:
             Omega += np.pi
-            w += np.pi
-        elif Omega >= np.pi:
+            w     += np.pi
+        elif Omega > np.pi:
             Omega -= np.pi
-            w -= np.pi
-
-        # Wrap w if out of range:
+            w     -= np.pi
         if w < 0:
-            w += 2. * np.pi
-        elif w >= 2. * np.pi:
-            w -= 2. * np.pi
-    
-    if debug:
-        assert np.min(Omega) >= 0, \
-          "Omega has negative values, min is %10.4e" % np.min(Omega)
-        assert np.max(Omega) < np.pi, "Omega has values greater than pi"
-        assert np.min(w) >= 0, "w has negative values."
-        assert np.max(w) < 2. * np.pi, "w has values greater than 2 pi"
-        
+            w     += np.pi*2
+     
+     
     q1 = (A+G)/np.cos(w+Omega)
     q2 = (A-G)/np.cos(w-Omega)
-    
+     
     i = 2. * np.arctan(np.sqrt(q2/q1))
     a = 0.5 * (q1 + q2)
-    
+     
     return w, a, i, Omega
 
 # Some simple conversion functions to just make the code
