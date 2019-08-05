@@ -1397,3 +1397,35 @@ def AUyr2Kms(velocity):
 def kms2AUyr(velocity):
     
     return velocity * (365.256*24*60*60)/1.496e8
+
+def rv_parameters_from_vt(f_t1, f_t2, v1, v2, sigma_v1, sigma_v2):
+    
+    I = np.sum(f_t1 * v1 / sigma_v1**2, axis=0)
+    J = np.sum(f_t1 / sigma_v1**2, axis=0)
+    K = np.sum(f_t1**2 / sigma_v1**2, axis=0)
+    
+    Q = np.sum(f_t2 * v2 / sigma_v2**2, axis=0)
+    R = np.sum(f_t2 / sigma_v2**2, axis=0)
+    S = np.sum(f_t2**2 / sigma_v2**2, axis=0)
+    
+    W = np.sum((v1 / sigma_v1**2) + (v2 / sigma_v2**2), axis=0)
+    Z = np.sum((1 / sigma_v1**2) + (1 / sigma_v2**2), axis=0)
+    
+    det = Z*K*S - S*J**2 - K*R**2
+    
+    gamma = (W*K*S - J*S*I - Q*K*R) / det
+    k1 = (I*Z*S + Q*R*J - J*S*W - I*R**2) / det
+    k2 = (R*W*K + Q*J**2 - J*I*R - Q*Z*K) / det
+    
+    sigma_gamma = np.sqrt(np.sum((S*(K - J*f_t1)/(det * sigma_v1))**2) + \
+                          np.sum((K*(S - R*f_t2)/(det * sigma_v2))**2))
+    
+    sigma_k1 = np.sqrt(np.sum(((Z*S*f_t1 - J*S - R**2*f_t1)/(det * sigma_v1))**2) + \
+                       np.sum((J*(R*f_t2 - S)/(det * sigma_v2))**2))
+    
+    sigma_k2 = np.sqrt(np.sum((R*(K - J*f_t1)/(det * sigma_v1))**2) + \
+                       np.sum(((R*K + J**2*f_t2 - Z*K*f_t2)/(det * sigma_v2))**2))
+    
+    sigma_list = [sigma_gamma, sigma_k1, sigma_k2]
+    
+    return gamma, k1, k2, sigma_list
