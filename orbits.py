@@ -668,12 +668,21 @@ def grid_P_e_T(n, logP_min, logP_max, e_min=0, e_max=0.99, tau_min=0, tau_max=0.
     want T to have values that are more like the data values, 
     then pass in a T start value, e.g. the minimum date in the data you are fitting.
     '''
-    P_array = np.zeros(n**3)
-    e_array = np.zeros(n**3)
-    T_array = np.zeros(n**3)
+    if type(n) == list:
+        n_P = n[0]
+        n_e = n[1]
+        n_T = n[2]
+    else:
+        n_P = n
+        n_e = n
+        n_T = n
+    
+    P_array = np.zeros(n_P * n_e * n_T)
+    e_array = np.zeros(n_P * n_e * n_T)
+    T_array = np.zeros(n_P * n_e * n_T)
 
     j = 0
-    for logP in np.linspace(logP_min,logP_max,n):
+    for logP in np.linspace(logP_min,logP_max,n_P):
         # For each period, get a range of 
         # times of periastron that spans
         # the course of the period.
@@ -684,9 +693,9 @@ def grid_P_e_T(n, logP_min, logP_max, e_min=0, e_max=0.99, tau_min=0, tau_max=0.
         # calculate the T's from there separately 
         # for each P.
         P = 10**logP
-        for tau in np.linspace(tau_min,tau_max,n):
+        for tau in np.linspace(tau_min,tau_max,n_T):
             T = T_start + tau*P
-            for e in np.linspace(e_min,e_max,n):
+            for e in np.linspace(e_min,e_max,n_e):
                 P_array[j] = P
                 e_array[j] = e
                 T_array[j] = T
@@ -1324,15 +1333,54 @@ def loop_posteriors(likelihood_norm, star_name, param_info):
                             lit_param, lit_param_err_low, lit_param_err_high)
 
 def AUyr2Kms(velocity):
-    
+    '''
+    Converts velocity in AU per year to kilometers per second
+    '''
     return velocity * 1.496e8/(365.256*24*60*60)
 
 def kms2AUyr(velocity):
+    '''
+    Converts velocity in kilometers per second to AU per year
+    '''
     
     return velocity * (365.256*24*60*60)/1.496e8
 
 def rv_parameters_from_vt(f_t1, f_t2, v1, v2, sigma_v1, sigma_v2):
+    '''Calculates the campbell elements for radial velocity from experimental
+       data as well as their uncertainties given the uncertainty in the data.
+       Gamma, k1, k2 come out as the units which the velocities were inputted 
+       as.
+       
+    Inputs: f_t1 - Array time values corresponding to the times that v_1 were 
+                   measured at that have undergone a transformation involving 
+                   mean anomaly, eccentricity, longitude of periastron, and 
+                   eccentric anomoly which is documented as a routine.
+            f_t2 - Same as f_t1 except transforms the values of t associated
+                   with the times that v_2 were measured at.
+            v_1 - Array of values of the measured radial velocity of the 
+                  primary, must have the same dimensions as f_t1.
+            v_2 - Array of values of the measured radial velocity of the 
+                  secondary, must have the same dimensions as f_t2.
+            sigma_v1 - Array of uncertainties on v_1 measured at each
+                       individual datapoint, must have same dimensions as v_1 
+                       or be single valued.
+            sigma_v2 - Array of uncertainties on v_2 measured at each
+                       individual datapoint, must have same dimensions as v_2 
+                       or be single valued.
+        
+    Outputs: gamma - The velocity at which the system is moving away from 
+                     earth, single valued.
+             k1 - The coefficient multiplied by f_t1 to obtain the radial 
+                  velocity of the primary if gamma was 0, single valued.
+             k2 - The coefficient multiplied by f_t2 to obtain the radial 
+                  velocity of the secondary if gamma was 0, single valued.
+             sigma_list - List of propagated uncertainties on the calculated 
+                          gamma, k1, and k2.
+    '''
     
+    #Simplifying the terms of the resultant smultaneous equations that arise 
+    #from taking the derivative of the chi-squared calculation with respect to 
+    #the constants we wish to calculate
     I = np.sum(f_t1 * v1 / sigma_v1**2, axis=0)
     J = np.sum(f_t1 / sigma_v1**2, axis=0)
     K = np.sum(f_t1**2 / sigma_v1**2, axis=0)
@@ -1344,21 +1392,51 @@ def rv_parameters_from_vt(f_t1, f_t2, v1, v2, sigma_v1, sigma_v2):
     W = np.sum((v1 / sigma_v1**2) + (v2 / sigma_v2**2), axis=0)
     Z = np.sum((1 / sigma_v1**2) + (1 / sigma_v2**2), axis=0)
     
+    #Our common denominator across the formulae for each constant
     det = Z*K*S - S*J**2 - K*R**2
     
     gamma = (W*K*S - J*S*I - Q*K*R) / det
     k1 = (I*Z*S + Q*R*J - J*S*W - I*R**2) / det
     k2 = (R*W*K + Q*J**2 - J*I*R - Q*Z*K) / det
     
-    sigma_gamma = np.sqrt(np.sum((S*(K - J*f_t1)/(det * sigma_v1))**2) + \
-                          np.sum((K*(S - R*f_t2)/(det * sigma_v2))**2))
+    #Took derivative of each constant with respect to each individual velocity
+    #Squared these derivatives
+    #Product of each squared derivative and its squared uncertainty
+    #Sum this product over each datapoint for v1 and v2 separately
+    #Take the square root of this sum of sums to obtain propagated uncertainties
+    sigma_gamma = np.sqrt(np.sum((S*(K - J*f_t1)/(det * sigma_v1))**2, axis=0) + \
+                          np.sum((K*(S - R*f_t2)/(det * sigma_v2))**2, axis=0))
     
-    sigma_k1 = np.sqrt(np.sum(((Z*S*f_t1 - J*S - R**2*f_t1)/(det * sigma_v1))**2) + \
-                       np.sum((J*(R*f_t2 - S)/(det * sigma_v2))**2))
+    sigma_k1 = np.sqrt(np.sum(((Z*S*f_t1 - J*S - R**2*f_t1)/(det * sigma_v1))**2, axis=0) + \
+                       np.sum((J*(R*f_t2 - S)/(det * sigma_v2))**2, axis=0))
     
-    sigma_k2 = np.sqrt(np.sum((R*(K - J*f_t1)/(det * sigma_v1))**2) + \
-                       np.sum(((R*K + J**2*f_t2 - Z*K*f_t2)/(det * sigma_v2))**2))
+    sigma_k2 = np.sqrt(np.sum((R*(K - J*f_t1)/(det * sigma_v1))**2, axis=0) + \
+                       np.sum(((R*K + J**2*f_t2 - Z*K*f_t2)/(det * sigma_v2))**2, axis=0))
     
     sigma_list = [sigma_gamma, sigma_k1, sigma_k2]
     
     return gamma, k1, k2, sigma_list
+
+def rv_x_values(times, P, T, e, w):
+    '''Transforms the array of input times by section of L18 Eq.1 that the 
+    K-values get multiplied by. Such that it may be linearised where y = v, 
+    gamma = y-intercept, K-values = gradient, x = f_t.
+    
+    Inputs: times - Array of time values that the velocity measurements were 
+                    made at.
+            P - Single valued period of the orbit.
+            T - Single valued time of epoch of the orbit.
+            e - Single valued eccentricity of the orbit.
+            w - Single valued longitude of periastron of the orbit.
+    
+    Outputs: f_t - Array of transformed time values to be used as x-values in a
+                   least squares fit of the radil velocity.
+    '''
+    #Get the mean anomaly at each datapoint
+    M = (2*np.pi/P)*(times-T)
+    #Get eccentric anomaly at each datapoint
+    E = getE_parallel(M, e)
+    #Transform each datapoint
+    f_t = (np.cos(w)*np.cos(E)*(1-e**2)-np.sin(w)*np.sin(E)*np.sqrt(1-e**2))/(1-e*np.cos(E))
+    
+    return f_t
