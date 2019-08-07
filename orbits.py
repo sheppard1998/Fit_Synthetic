@@ -1214,21 +1214,21 @@ def posterior_graph(likelihood_norm, star_name, param, param_arr, param_mean, \
     plt.legend(fontsize=14, numpoints=1, loc='upper left')
     
     if param == 'a':
-        plt.savefig("Posterior Graphs/" + star_name_nospace + "_a_dist.png")
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "/" + star_name_nospace + "_a_dist.png")
     elif param == 'e':
-        plt.savefig("Posterior Graphs/" + star_name_nospace + "_e_dist.png")
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "/" + star_name_nospace + "_e_dist.png")
     elif param == 'i':
-        plt.savefig("Posterior Graphs/" + star_name_nospace + "_i_dist.png")
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "/" + star_name_nospace + "_i_dist.png")
     elif param == 'w':
-        plt.savefig("Posterior Graphs/" + star_name_nospace + "_w_dist.png")
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "/" + star_name_nospace + "_w_dist.png")
     elif param == 'Omega':
-        plt.savefig("Posterior Graphs/" + star_name_nospace + "_Omega_dist.png")
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "/" + star_name_nospace + "_Omega_dist.png")
     elif param == 'T':
-        plt.savefig("Posterior Graphs/" + star_name_nospace + "_T_dist.png")
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "/" + star_name_nospace + "_T_dist.png")
     elif param == 'Mass':
-        plt.savefig("Posterior Graphs/" + star_name_nospace + "_Mass_dist.png")
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "/" + star_name_nospace + "_Mass_dist.png")
     elif param == 'P':
-        plt.savefig("Posterior Graphs/" + star_name_nospace + "_P_dist.png")
+        plt.savefig("Posterior Graphs/" + star_name_nospace + "/" + star_name_nospace + "_P_dist.png")
     
     plt.show()
 

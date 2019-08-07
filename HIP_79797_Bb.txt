@@ -1,0 +1,10 @@
+# Date	rho	rho_err	PA	PA_err
+2010.27	0.060	0.020	331	13
+2010.35	0.060	0.006	339	3
+2011.35	0.063	0.015	340	10
+2012.26	0.063	0.007	342	3
+2012.66	0.077	0.014	338	9
+
+# Data comes from Blunt, Nielsen, De Rosa et al. 2017 paper Table 5
+# https://iopscience.iop.org/article/10.3847/1538-3881/aa6930
+# W.r.t HIP 79797 Ba
