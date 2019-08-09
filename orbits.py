@@ -945,7 +945,7 @@ def correct_orbit_likelihood(P_in, e_in, T_in, \
     
     # And then return everything:
 
-    return w, a, i, T, e, P, Omega, likelihood, script_ABFG
+    return w, a, i, T, e, P, Omega, likelihood, script_ABFG, eta
 
 
 def credible_interval(parameter, likelihood, n_sigma=np.array([1]), log = False):
